@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v1.4</title>
+<title>LEENAI ドレースケジュール管理 v1.5</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -258,7 +258,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v1.4</div>
+  <div class="header-ver">v1.5</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -725,9 +725,136 @@ const ITEM_JA_MAP = {
 };
 
 // ══════════════════════════════════════════
+// 표시 패턴 마스터 (엑셀표 형식 기반)
+// ══════════════════════════════════════════
+
+// Packer 정식명 → 약칭
+const PACKER_SHORT = {
+  '兼子':           '兼',   '株式会社兼子':       '兼',
+  'ウブカタ資源':   'ウブ', 'ウブカタ資源株式会社':'ウブ',
+  '東京紙パルプ交易':'東',  '東京紙パルプ交易株式会社':'東',
+  '紙材':           '紙材',
+  '熊谷':           '熊谷',
+  '群馬総合紙業':   '群馬', '株式会社群馬総合紙業':'群馬',
+  'ツルミ紙業':     'ツルミ',
+  '丸康商店':       '丸康', '株式会社丸康商店':   '丸康',
+  '共益商会':       '共益', '株式会社共益・商会': '共益',
+  '山治':           '山治',
+  '育峯':           '育峯',
+  '富士紙業':       '富士', '有限会社富士紙業':   '富士',
+  '株式会社ティーピーシー':'TPC',
+};
+
+// Plant 정식명 → 약칭 (兼子)
+const PLANT_SHORT_KANEKO = {
+  '兼子(横浜)':  '横', '兼子(埼玉)':  '埼', '兼子(湘南)':  '湘',
+  '兼子(船橋)':  '船', '兼子(川崎)':  '川', '兼子(戸塚)':  '戸',
+  '兼子(市原)':  '市', '合同':        '合',
+};
+
+// Plant 정식명 → 약칭 (東=TKK)
+const PLANT_SHORT_TKK = {
+  '東(三弘相模原)': '三弘相模原', '東(三弘朝霞)':  '三弘朝霞',
+  '東(三弘八王子)': '三弘八王子', '東(新井千葉)':  '新井千葉',
+  '東(新井松戸)':   '新井松戸',   '東(新井入谷)':  '新井入谷',
+  '東(新井浦和)':   '新井浦和',   '東(関東紙業)':  '関東',
+  '東(興栄)':       '興栄',       '東(日興紙業)':  '日興',
+  '東(こづか本社)': 'こづか本社', '東(こづか横浜北)':'こづか横浜北',
+  '東(川鈴)':       '川鈴',       '東(山治)':       '山治',
+};
+
+// ITEM 코드 → 약칭 (엑셀표 기반)
+const ITEM_CODE_SHORT = {
+  'JOCC':'C',  'JOMX':'M',  'JOOP':'S',  'JONP':'N',
+  'JOCP':'B',  'JOMP':'雑', 'JOWP':'W',  'JOSP':'上白',
+  'JOPP':'P',  'JOPS':'PP', 'JOPE':'PE', 'JOPX':'PX',
+  'JOAL':'AL', 'JOST':'ST', 'JOSS':'SUS','JOCU':'Cu',
+  'JOCP2':'K',
+  // ITEM코드 → 엑셀약칭 매핑 (crcf9_item_japan 기반)
+  'OCC':'C',        'OMG':'M',    'ONP':'N',    'SOP':'S',
+  'BBC':'B',        'SHREDDER':'シ','OINP':'残紙',
+  'e段':'E',        'KGB':'KG',   'PPG':'P',
+  '牛乳パック':'牛乳', '紙管':'紙管', '間紙':'間紙',
+};
+
+// CT種別 정식명 → 약칭
+const CT_SHORT = {
+  '45GP':'C', '40GP':'C', '20GP':'C',
+  '45R':'R',  '40R':'R',
+  '45HQ':'C', '40HQ':'C',
+};
+
+// 드레이 약칭 (short 그대로 사용, CY → 直送)
+function getDrayShort(drayShort){
+  if(!drayShort) return '直送';
+  return drayShort; // DRAY_MASTER_BY_GUID의 short 값 그대로
+}
+
+// Plant 전체 표기 → 약칭
+function getPlantShort(plantName){
+  if(!plantName) return '';
+  // 兼子 계열
+  const k = Object.entries(PLANT_SHORT_KANEKO).find(([k]) => plantName.includes(k.replace('兼子','').replace('(','').replace(')','')) );
+  // 直접 매핑 시도
+  for(const [full, short] of Object.entries(PLANT_SHORT_KANEKO)){
+    if(plantName.includes(full.replace('兼子(','').replace(')',''))){ return short; }
+  }
+  for(const [full, short] of Object.entries(PLANT_SHORT_TKK)){
+    if(plantName === full || plantName.includes(full.replace('東(','').replace(')',''))){ return short; }
+  }
+  // 그 외: 괄호 안 내용 추출
+  const m = plantName.match(/[（(]([^)）]+)[)）]/);
+  if(m) return m[1];
+  return plantName.slice(0,4);
+}
+
+// Packer명 → 약칭
+function getPackerShort(packerName){
+  if(!packerName) return '';
+  for(const [full, short] of Object.entries(PACKER_SHORT)){
+    if(packerName.includes(full)) return short;
+  }
+  // 불명 → 앞 2글자
+  return packerName.replace('株式会社','').replace('有限会社','').slice(0,2);
+}
+
+// ITEM코드/이름 → 엑셀 약칭
+function getItemShort(itemCode, itemJa){
+  if(!itemCode && !itemJa) return '';
+  const src = itemCode || itemJa;
+  if(ITEM_CODE_SHORT[src]) return ITEM_CODE_SHORT[src];
+  if(itemJa && ITEM_CODE_SHORT[itemJa]) return ITEM_CODE_SHORT[itemJa];
+  // 불명 → ITEM코드 그대로
+  return itemCode || itemJa;
+}
+
+// CT種別 → 약칭
+function getCtShort(cttype){
+  if(!cttype) return '';
+  return CT_SHORT[cttype] || cttype.replace('GP','').replace('HQ','');
+}
+
+// ══ 엑셀표 형식으로 1행 텍스트 생성 ══
+// 형식: Packer約(Plant約)-ドレー約 ITEM+本数 時間
+function formatScheduleLine(packerName, plantName, drayShort, itemCode, itemJa, cttype, hon, time, isCyDirect){
+  const pk = getPackerShort(packerName);
+  const pl = getPlantShort(plantName);
+  const dr = isCyDirect ? '直送' : getDrayShort(drayShort);
+  const it = getItemShort(itemCode, itemJa);
+  const ct = getCtShort(cttype);
+  const h = hon || 1;
+  const tm = time ? time.slice(0,5) : 'フリー';
+
+  const pkPl = pl ? `${pk}(${pl})` : pk;
+  const itCt = it ? `${it}${ct}${h}` : `${ct}${h}`;
+
+  return `${pkPl}-${dr} ${itCt} ${tm}`;
+}
+
+// ══════════════════════════════════════════
 // COMPASS 집계 (STEP1 + STEP2 동시)
 // ══════════════════════════════════════════
-async function refreshCompass(){
+async function refreshCompass(saveToCache = false){
   if(!S.accessToken || Date.now() > S.tokenExpiry){
     toast('COMPASSログインが必要です', 'err');
     return;
@@ -869,21 +996,34 @@ async function refreshCompass(){
     );
     const ciRows = ciData.value || [];
 
-    // Plant 명칭 일괄 취득
+    // Plant 명칭 + Packer GUID 일괄 취득
     showLoading(`Plant情報取得中...`);
     const plantGuids = [...new Set(ciRows.map(r => r['_crcf9_parker_plant_id_value']).filter(Boolean))];
-    const plantMap = {}; // guid → {plant, packerName}
+    const plantMap = {}; // guid → {plant, packerGuid}
     await Promise.all(plantGuids.map(async g => {
       try {
-        const r = await dvGet(`crcf9_packer_plants(${g})?$select=crcf9_plant`);
-        plantMap[g.toUpperCase()] = r.crcf9_plant || '';
+        const r = await dvGet(`crcf9_packer_plants(${g})?$select=crcf9_plant,_cr49f_packer_id_value`);
+        plantMap[g.toUpperCase()] = {
+          plant:      r.crcf9_plant || '',
+          packerGuid: (r['_cr49f_packer_id_value'] || '').toUpperCase(),
+        };
+      } catch(_){}
+    }));
+
+    // Packer명 일괄 취득
+    const ciPackerGuids = [...new Set(Object.values(plantMap).map(p => p.packerGuid).filter(Boolean))];
+    const ciPackerMap = {}; // guid → packerName
+    await Promise.all(ciPackerGuids.map(async g => {
+      try {
+        const r = await dvGet(`cr49f_packers(${g})?$select=cr49f_packer_name`);
+        ciPackerMap[g] = r.cr49f_packer_name || '';
       } catch(_){}
     }));
 
     // BKG → booking_detail → ITEM 취득
     showLoading('品目情報取得中...');
     const bkgGuids = [...new Set(ciRows.map(r => r['_crcf9_booking_id_value']).filter(Boolean))];
-    const bkgItemMap = {}; // bkgGuid → [itemName...]
+    const bkgItemMap = {}; // bkgGuid → [{code, ja}...]
     await Promise.all(bkgGuids.map(async g => {
       try {
         const r = await dvGet(
@@ -893,8 +1033,8 @@ async function refreshCompass(){
         const items = await Promise.all(itemGuids.map(async ig => {
           try {
             const ir = await dvGet(`cr49f_items(${ig})?$select=cr49f_item,crcf9_item_japan`);
-            return ir.crcf9_item_japan || ir.cr49f_item || '';
-          } catch(_){ return ''; }
+            return { code: ir.cr49f_item || '', ja: ir.crcf9_item_japan || '' };
+          } catch(_){ return null; }
         }));
         bkgItemMap[g.toUpperCase()] = items.filter(Boolean);
       } catch(_){}
@@ -907,16 +1047,21 @@ async function refreshCompass(){
       const plantGuid = (r['_crcf9_parker_plant_id_value'] || '').toUpperCase();
       const bkgGuid = (r['_crcf9_booking_id_value'] || '').toUpperCase();
       const dateStr = (r.crcf9_work_date || '').slice(0, 10);
+      const plantInfo = plantMap[plantGuid] || {};
+      const packerName = ciPackerMap[plantInfo.packerGuid] || '';
+      const isCyDirect = !drayGuid || !dray;
       return {
-        id:        r.crcf9_container_informationid,
-        date:      dateStr,
-        time:      r.crcf9_work_time || '',
-        drayShort: dray ? dray.short : '',
+        id:         r.crcf9_container_informationid,
+        date:       dateStr,
+        time:       r.crcf9_work_time || '',
+        drayShort:  dray ? dray.short : '',
         drayGuid,
-        plant:     plantMap[plantGuid] || '',
+        plant:      plantInfo.plant || '',
         plantGuid,
-        cttype:    r.crcf9_type || '',
-        items:     bkgItemMap[bkgGuid] || [],
+        packerName,
+        cttype:     r.crcf9_type || '',
+        items:      bkgItemMap[bkgGuid] || [],
+        isCyDirect,
         bkgGuid,
       };
     });
@@ -940,7 +1085,24 @@ async function refreshCompass(){
 
     renderSummary();
     render(); // 캘린더도 갱신
-    toast(`COMPASS完了: 購買契約${S.purchaseTotalHon}本 / 確定${S.compassTotal}本 / 残量${S.remainTotalHon}本`, 'ok');
+
+    // 과거 월이면 localStorage에 캐시 저장
+    if(saveToCache){
+      const cacheKey = `b05_compass_${S.currentYear}_${String(S.currentMonth).padStart(2,'0')}`;
+      try{
+        localStorage.setItem(cacheKey, JSON.stringify({
+          schedules: S.compassSchedules,
+          total:     S.compassTotal,
+          byTruck:   S.compassByTruck,
+          savedAt:   new Date().toISOString(),
+        }));
+        toast(`${S.currentYear}年${S.currentMonth}月 購買契約${S.purchaseTotalHon}本 / 確定${S.compassTotal}本 / 残量${S.remainTotalHon}本 (保存済)`, 'ok');
+      } catch(_){
+        toast(`COMPASS完了: 確定${S.compassTotal}本 (保存失敗)`, 'info');
+      }
+    } else {
+      toast(`COMPASS完了: 購買契約${S.purchaseTotalHon}本 / 確定${S.compassTotal}本 / 残量${S.remainTotalHon}本`, 'ok');
+    }
   } catch(e){
     toast('COMPASS取得エラー: ' + e.message.slice(0,60), 'err');
     console.error(e);
@@ -1159,32 +1321,46 @@ function buildCellHTML(date, ds, slots, dayScheds, fulfillment){
   // COMPASS 확정 스케줄 섹션
   if(compassDay.length > 0){
     html += `<div class="compass-section">
-      <div class="compass-label">🔵 COMPASS確定</div>`;
-    compassDay.forEach(c => {
-      const timeStr = c.time ? c.time.slice(0,5) : '';
-      const itemStr = c.items.length ? c.items[0] : '';
-      const plantShort = c.plant?.replace('（','(').replace('）',')')?.split('(')[1]?.replace(')','') || c.plant || '';
-      // 스케줄표와 대조
+      <div class="compass-label">🔵 COMPASS</div>`;
+    // 시간순 정렬
+    const sorted = [...compassDay].sort((a,b) => {
+      if(!a.time) return 1;
+      if(!b.time) return -1;
+      return a.time < b.time ? -1 : 1;
+    });
+    sorted.forEach(c => {
+      const firstItem = c.items[0] || {};
+      const line = formatScheduleLine(
+        c.packerName, c.plant, c.drayShort,
+        firstItem.code, firstItem.ja,
+        c.cttype, 1, c.time, c.isCyDirect
+      );
+      // 대조: 날짜 + 드레이 일치 여부
       const matched = dayScheds.some(s => s.truck === c.drayShort);
       const cls = matched ? 'compass' : 'compass-ng';
       const matchBadge = matched
         ? `<span class="match-badge match-ok">✓</span>`
-        : `<span class="match-badge match-ng">未登録</span>`;
-      html += `<div class="sched-item ${cls}">${escH(c.drayShort)} ${escH(plantShort)} ${escH(timeStr)}${escH(itemStr?` [${itemStr}]`:'')}${matchBadge}</div>`;
+        : `<span class="match-badge match-ng">❗未登録</span>`;
+      html += `<div class="sched-item ${cls}" style="font-size:9px;">${escH(line)}${matchBadge}</div>`;
     });
     html += `</div>`;
   }
 
-  // 스케줄표 섹션
+  // 스케줄표 섹션 (수동 등록분)
   html += '<div class="sched-section">';
   if(dayScheds.length > 0){
     dayScheds.slice(0, 3).forEach(s => {
       const compassMatched = compassDay.some(c => s.truck === c.drayShort);
       const cls = compassMatched ? 'confirmed' : 'sched-only';
-      const badge2 = !compassMatched
+      const badge2 = compassDay.length > 0 && !compassMatched
         ? `<span class="match-badge match-warn">COMPASS未</span>`
         : '';
-      html += `<div class="sched-item ${cls}">${escH(s.truck)} ${escH(s.packer?.split('(')[0]||'')} ${escH(s.time||'')}${badge2}</div>`;
+      // 스케줄표도 엑셀 형식으로 표시
+      const pkShort = getPackerShort(s.packer || '');
+      const plShort = getPlantShort(s.packer || '');
+      const pkPl = plShort && plShort !== pkShort ? `${pkShort}(${plShort})` : pkShort;
+      const tm = s.time || 'フリー';
+      html += `<div class="sched-item ${cls}" style="font-size:9px;">${escH(pkPl||s.packer||'')}-${escH(s.truck)} ${escH(tm)}${badge2}</div>`;
     });
     if(dayScheds.length > 3) html += `<div style="font-size:9px;color:var(--text3);">+${dayScheds.length-3}件</div>`;
   }
@@ -1490,7 +1666,40 @@ function changeMonth(dir){
   if(S.currentMonth > 12){ S.currentMonth = 1; S.currentYear++; }
   if(S.currentMonth < 1){ S.currentMonth = 12; S.currentYear--; }
   render();
-  if(S.accessToken && Date.now() < S.tokenExpiry) refreshCompass();
+  if(S.accessToken && Date.now() < S.tokenExpiry){
+    const now = new Date();
+    const isCurrentMonth = S.currentYear === now.getFullYear() && S.currentMonth === now.getMonth() + 1;
+    const isPast = S.currentYear < now.getFullYear() ||
+                   (S.currentYear === now.getFullYear() && S.currentMonth < now.getMonth() + 1);
+    if(isCurrentMonth){
+      // 현재 월 → 항상 refresh
+      refreshCompass();
+    } else if(isPast){
+      // 과거 월 → 캐시 있으면 사용, 없으면 취득
+      const cacheKey = `b05_compass_${S.currentYear}_${String(S.currentMonth).padStart(2,'0')}`;
+      const cached = localStorage.getItem(cacheKey);
+      if(cached){
+        try{
+          const data = JSON.parse(cached);
+          S.compassSchedules = data.schedules || [];
+          S.compassTotal     = data.total || 0;
+          S.compassByTruck   = data.byTruck || {};
+          S.compassByDate    = {};
+          S.compassSchedules.forEach(s => {
+            if(!S.compassByDate[s.date]) S.compassByDate[s.date] = [];
+            S.compassByDate[s.date].push(s);
+          });
+          renderSummary();
+          render();
+          toast(`${S.currentYear}年${S.currentMonth}月 キャッシュ読込 (${S.compassTotal}本)`, 'info');
+        } catch(_){ refreshCompass(); }
+      } else {
+        // 캐시 없음 → COMPASS에서 취득 후 저장
+        refreshCompass(true); // true = 취득 후 캐시 저장
+      }
+    }
+    // 미래 월 → 아무것도 안 함 (빈 캘린더)
+  }
 }
 
 // ══════════════════════════════════════════

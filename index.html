@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v3.0</title>
+<title>LEENAI ドレースケジュール管理 v3.1</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -293,7 +293,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v3.0</div>
+  <div class="header-ver">v3.1</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -329,7 +329,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
   <select class="dray-select" id="packerFilter" onchange="render()">
     <option value="">全Packer</option>
     <option value="兼">兼子</option>
-    <option value="東">東(TKK)</option>
+    <option value="TKK">東(TKK)</option>
     <option value="群馬">群馬</option>
     <option value="TPC">TPC</option>
     <option value="川鈴">川鈴</option>
@@ -1206,7 +1206,7 @@ const REGION_JAPAN_MAP = {
 // Packer 정식명/코드 → 약칭
 const PACKER_SHORT = {
   // 코드값 (crcf9_packer_id)
-  'KANEKO':  '兼', 'TOKYO':   '東', 'UBUKTA':  'ウブ',
+  'KANEKO':  '兼', 'TOKYO':   'TKK', 'UBUKTA':  'ウブ',
   'KUMAGAI': '熊谷', 'GUNMA':  '群馬', 'TSURUMI': 'ツルミ',
   'MARUKO':  '丸康', 'KYOEKI': '共益', 'YAMAJI':  '山治',
   'IKUMINE': '育峯', 'FUJI':   '富士', 'TPC':     'TPC',
@@ -1214,7 +1214,7 @@ const PACKER_SHORT = {
   // 일본어 정식명
   '兼子':           '兼',   '株式会社兼子':       '兼',
   'ウブカタ資源':   'ウブ', 'ウブカタ資源株式会社':'ウブ',
-  '東京紙パルプ交易':'東',  '東京紙パルプ交易株式会社':'東',
+  '東京紙パルプ交易':'TKK',  '東京紙パルプ交易株式会社':'TKK',
   '紙材':           '紙材',
   '熊谷':           '熊谷',
   '群馬総合紙業':   '群馬', '株式会社群馬総合紙業':'群馬',

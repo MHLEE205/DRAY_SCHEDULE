@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v2.6</title>
+<title>LEENAI ドレースケジュール管理 v2.7</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -293,7 +293,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v2.6</div>
+  <div class="header-ver">v2.7</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -987,7 +987,7 @@ async function doScSearch(){
         time:r.crcf9_work_time||'',
         inco:r.crcf9_incoterms||'',
         cttype:r.crcf9_type||'',
-        drayShort:dray?dray.short:'',
+        drayShort:dray?getDrayShort(dray.short):'',
         drayName:dray?dray.name:'(不明)',
         plant:pi.plant||'',
         packerCode:pi.packerCode||'',
@@ -1274,7 +1274,15 @@ const CT_SHORT = {
 // 드레이 약칭 (short 그대로 사용, CY → 直送)
 function getDrayShort(drayShort){
   if(!drayShort) return '直送';
-  return drayShort; // DRAY_MASTER_BY_GUID의 short 값 그대로
+  // 2글자 이하면 그대로
+  if(drayShort.length <= 2) return drayShort;
+  // 영문+숫자만으로 구성된 경우: 공백 앞까지 (IS transport → IS)
+  if(/^[A-Za-z0-9&]+/.test(drayShort)){
+    const m = drayShort.match(/^[A-Za-z0-9&]+/);
+    if(m && m[0].length <= 4) return m[0];
+  }
+  // 일본어 포함: 앞 2글자
+  return drayShort.slice(0, 2);
 }
 
 // Plant 전체 표기 → 약칭
@@ -1556,7 +1564,7 @@ async function refreshCompass(saveToCache = false){
         id:         r.crcf9_container_informationid,
         date:       dateStr,
         time:       r.crcf9_work_time || '',
-        drayShort:  dray ? dray.short : '',
+        drayShort:  dray ? getDrayShort(dray.short) : '',
         drayGuid,
         plant:      plantInfo.plant || '',
         plantGuid,

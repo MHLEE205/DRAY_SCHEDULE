@@ -3,12 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v1.2</title>
+<title>LEENAI ドレースケジュール管理 v1.3</title>
 <style>
-:root{--bg:#0f1117;--surface:#1a1d27;--surface2:#22263a;--surface3:#2a2f46;--border:#2e3350;--accent:#4f8ef7;--accent2:#6fa3ff;--ok:#22c55e;--warn:#f59e0b;--danger:#ef4444;--info:#38bdf8;--purple:#a78bfa;--teal:#14b8a6;--text:#e2e8f0;--text2:#8892a4;--text3:#4a5568;--radius:10px;}
-[data-theme="light"]{--bg:#f4f6fb;--surface:#ffffff;--surface2:#f0f4ff;--surface3:#e8edf7;--border:#d1d5db;--text:#111827;--text2:#6b7280;--text3:#9ca3af;}
+/* ══ CSS 변수 ══ */
+:root {
+  --bg:#0f1117; --surface:#1a1d27; --surface2:#22263a; --surface3:#2a2f46;
+  --border:#2e3350; --accent:#4f8ef7; --accent2:#6fa3ff;
+  --ok:#22c55e; --warn:#f59e0b; --danger:#ef4444; --info:#38bdf8;
+  --purple:#a78bfa; --teal:#14b8a6;
+  --text:#e2e8f0; --text2:#8892a4; --text3:#4a5568;
+  --radius:10px;
+}
+[data-theme="light"] {
+  --bg:#f4f6fb; --surface:#ffffff; --surface2:#f0f4ff; --surface3:#e8edf7;
+  --border:#d1d5db; --text:#111827; --text2:#6b7280; --text3:#9ca3af;
+}
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:13px;}
+
+/* ══ Header ══ */
 .header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:200;height:50px;}
 .logo{font-size:16px;font-weight:800;letter-spacing:1px;}.logo span{color:var(--accent);}
 .header-sub{font-size:11px;color:var(--text2);}
@@ -16,12 +29,15 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 .header-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
 .theme-btn{background:var(--surface2);border:1px solid var(--border);color:var(--text2);padding:4px 10px;border-radius:8px;cursor:pointer;font-size:11px;}
 .header-user{font-size:12px;background:rgba(79,142,247,.15);color:var(--accent);padding:3px 10px;border-radius:12px;display:none;}
+
+/* ══ Controls Bar ══ */
 .ctrl-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
 .month-nav{display:flex;align-items:center;gap:8px;}
 .month-btn{background:var(--surface2);border:1px solid var(--border);color:var(--text);width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;}
 .month-btn:hover{border-color:var(--accent);color:var(--accent);}
 .month-label{font-size:15px;font-weight:700;min-width:100px;text-align:center;}
 .pol-select,.dray-select{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer;}
+.pol-select:focus,.dray-select:focus{outline:none;border-color:var(--accent);}
 .ctrl-sep{width:1px;height:24px;background:var(--border);}
 .btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;transition:all .15s;white-space:nowrap;}
 .btn:disabled{opacity:.4;cursor:not-allowed;}
@@ -29,37 +45,86 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 .btn-primary:hover:not(:disabled){filter:brightness(1.1);}
 .btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
 .btn-ghost:hover:not(:disabled){border-color:var(--accent);color:var(--accent);}
+.btn-ok{background:var(--ok);color:#fff;}
 .btn-teal{background:var(--teal);color:#fff;}
 .btn-sm{padding:4px 10px;font-size:11px;}
-.summary-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;gap:16px;flex-wrap:wrap;align-items:center;}
-.summary-title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-right:4px;}
-.summary-total{font-size:12px;color:var(--text2);}
-.summary-total b{color:var(--accent);}
-.truck-bar{display:flex;align-items:center;gap:10px;flex:1;min-width:200px;}
-.truck-name{font-size:12px;font-weight:700;min-width:50px;}
-.truck-progress-wrap{flex:1;position:relative;height:8px;background:var(--surface3);border-radius:4px;overflow:hidden;}
-.truck-progress{height:100%;border-radius:4px;transition:width .3s;}
-.truck-stats{font-size:11px;color:var(--text2);white-space:nowrap;}
-.truck-stats .ok{color:var(--ok);}
-.truck-stats .warn{color:var(--warn);}
-.calendar-wrap{padding:16px 20px;}
-.cal-header{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px;}
-.cal-dow{text-align:center;font-size:11px;font-weight:700;color:var(--text3);padding:4px 0;}
+
+/* ══ Main Layout ══ */
+.main{display:flex;flex-direction:column;gap:0;}
+
+/* ══ 2컬럼 레이아웃 ══ */
+.app-layout{display:flex;height:calc(100vh - 100px);overflow:hidden;}
+.calendar-col{flex:1;min-width:0;overflow-y:auto;padding:12px 16px;}
+.purchase-col{width:320px;flex-shrink:0;background:var(--surface);border-left:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column;}
+
+/* ══ 구매현황 패널 ══ */
+.purchase-header{padding:12px 14px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:10;}
+.purchase-header-title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;}
+.purchase-summary-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.ps-badge{font-size:11px;font-weight:700;}
+.ps-badge.total{color:var(--accent);}
+.ps-badge.remain{color:var(--warn);}
+.ps-badge.confirmed{color:var(--ok);}
+.purchase-body{padding:8px 10px;flex:1;}
+
+/* Packer 카드 */
+.pk-card{background:var(--surface2);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;overflow:hidden;}
+.pk-card-header{padding:8px 12px;display:flex;align-items:center;gap:8px;cursor:pointer;border-bottom:1px solid var(--border);}
+.pk-card-header:hover{background:var(--surface3);}
+.pk-name{font-size:12px;font-weight:700;flex:1;}
+.pk-total{font-size:12px;font-weight:700;color:var(--accent);}
+.pk-chevron{font-size:10px;color:var(--text3);transition:transform .2s;}
+.pk-chevron.open{transform:rotate(90deg);}
+.pk-body{display:none;padding:6px 8px;}
+.pk-body.open{display:block;}
+
+/* Plant 행 */
+.plant-row{display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:5px;font-size:11px;margin-bottom:2px;}
+.plant-row:hover{background:var(--surface3);}
+.plant-name{flex:1;color:var(--text2);font-weight:600;}
+.plant-count{font-weight:700;color:var(--warn);min-width:28px;text-align:right;}
+.plant-item{font-size:10px;color:var(--text3);background:var(--surface3);padding:1px 5px;border-radius:3px;}
+.plant-price{font-size:10px;color:var(--text3);}
+
+/* 확정 상태 바 */
+.pk-progress{height:3px;background:var(--surface3);border-radius:2px;margin:0 12px 8px;overflow:hidden;}
+.pk-progress-fill{height:100%;background:var(--ok);border-radius:2px;transition:width .3s;}
+
+/* 상단 확정 상황 바 (헤더 아래) */
+.confirm-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:8px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.confirm-title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;}
+.truck-chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;}
+
+
+/* ══ Calendar ══ */
+.calendar-wrap{padding:8px 0;}
+.cal-header{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:3px;}
+.cal-dow{text-align:center;font-size:10px;font-weight:700;color:var(--text3);padding:3px 0;}
 .cal-dow.sat{color:var(--info);}.cal-dow.sun{color:var(--danger);}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
-.cal-cell{background:var(--surface);border:1px solid var(--border);border-radius:8px;min-height:130px;cursor:pointer;transition:border-color .15s;overflow:hidden;display:flex;flex-direction:column;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+
+/* ══ Calendar Cell ══ */
+.cal-cell{background:var(--surface);border:1px solid var(--border);border-radius:6px;min-height:100px;cursor:pointer;transition:border-color .15s;overflow:hidden;display:flex;flex-direction:column;}
 .cal-cell:hover{border-color:var(--accent2);}
 .cal-cell.other-month{opacity:.35;}
 .cal-cell.today .cell-header{background:rgba(79,142,247,.15);}
+.cal-cell.sat .cell-dow{color:var(--info);}
+.cal-cell.sun .cell-dow{color:var(--danger);}
+
+/* 충족 상태 */
 .cal-cell.all-ok{border-color:var(--border);}
 .cal-cell.partial-ng{border-color:rgba(245,158,11,.5);}
 .cal-cell.all-ng{border-color:var(--warn);border-width:2px;}
+
+/* Cell Header */
 .cell-header{padding:4px 6px;display:flex;justify-content:space-between;align-items:center;background:var(--surface2);border-bottom:1px solid var(--border);}
 .cell-date{font-size:12px;font-weight:700;}
 .cell-badge{font-size:9px;padding:1px 5px;border-radius:8px;font-weight:700;}
 .badge-ok{background:rgba(34,197,94,.2);color:var(--ok);}
 .badge-partial{background:rgba(245,158,11,.2);color:var(--warn);}
 .badge-ng{background:rgba(245,158,11,.9);color:#000;}
+
+/* 仮押さえ 섹션 */
 .kari-section{padding:3px 5px;}
 .kari-label{font-size:9px;color:var(--text3);margin-bottom:2px;font-weight:600;}
 .kari-slots{display:flex;gap:2px;flex-wrap:wrap;}
@@ -68,18 +133,27 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 .kari-slot.ng{background:rgba(245,158,11,.15);border:1px dashed var(--warn);color:var(--warn);}
 .kari-slot.skip{text-decoration:line-through;opacity:.5;}
 .kari-slot.changed::after{content:'★';font-size:8px;}
+
+/* 오전/오후 구분선 */
 .kari-divider{border:none;border-top:1px dashed var(--border);margin:2px 5px;}
+
+/* 실제 스케줄 섹션 */
 .sched-section{padding:3px 5px;flex:1;border-top:1px solid var(--border);}
 .sched-item{font-size:10px;padding:2px 5px;border-radius:3px;margin-bottom:2px;border-left:2px solid;}
 .sched-item.confirmed{background:rgba(34,197,94,.1);border-left-color:var(--ok);}
 .sched-item.review{background:rgba(245,158,11,.1);border-left-color:var(--warn);}
 .sched-item.pending{background:rgba(239,68,68,.1);border-left-color:var(--danger);}
+.sched-item.unassigned{background:var(--surface3);border-left:2px dashed var(--border);color:var(--text3);}
 .sched-add{font-size:10px;color:var(--text3);padding:2px 5px;cursor:pointer;text-align:center;margin-top:2px;}
 .sched-add:hover{color:var(--accent);}
+
+/* ══ Login Screen ══ */
 #loginScreen{display:flex;align-items:center;justify-content:center;min-height:60vh;flex-direction:column;gap:20px;}
 .login-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:40px;text-align:center;max-width:400px;}
 .login-card h2{font-size:18px;margin-bottom:8px;}
 .login-card p{font-size:13px;color:var(--text2);margin-bottom:24px;}
+
+/* ══ Modal ══ */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;display:none;align-items:center;justify-content:center;}
 .modal-overlay.open{display:flex;}
 .modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);width:520px;max-width:95vw;max-height:85vh;overflow-y:auto;display:flex;flex-direction:column;}
@@ -90,6 +164,8 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 .modal-close:hover{color:var(--text);}
 .modal-body{padding:16px 20px;display:flex;flex-direction:column;gap:14px;}
 .modal-footer{padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;position:sticky;bottom:0;background:var(--surface);}
+
+/* Existing schedules in modal */
 .existing-list{display:flex;flex-direction:column;gap:6px;margin-bottom:4px;}
 .existing-item{background:var(--surface2);border-radius:8px;padding:10px 12px;display:flex;align-items:center;gap:10px;border-left:3px solid;}
 .existing-item.confirmed{border-left-color:var(--ok);}
@@ -101,6 +177,8 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 .status-confirmed{background:rgba(34,197,94,.2);color:var(--ok);}
 .status-review{background:rgba(245,158,11,.2);color:var(--warn);}
 .status-pending{background:rgba(239,68,68,.2);color:var(--danger);}
+
+/* Form */
 .form-section-label{font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;padding-bottom:6px;border-bottom:1px solid var(--border);}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .form-group{display:flex;flex-direction:column;gap:5px;}
@@ -113,6 +191,8 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 .status-btn.active.confirmed{background:rgba(34,197,94,.2);border-color:var(--ok);color:var(--ok);}
 .status-btn.active.review{background:rgba(245,158,11,.2);border-color:var(--warn);color:var(--warn);}
 .status-btn.active.pending{background:rgba(239,68,68,.2);border-color:var(--danger);color:var(--danger);}
+
+/* ══ 仮押さえ設定 Panel ══ */
 .kari-panel{position:fixed;right:0;top:50px;bottom:0;width:380px;background:var(--surface);border-left:1px solid var(--border);z-index:300;transform:translateX(100%);transition:transform .25s;display:flex;flex-direction:column;}
 .kari-panel.open{transform:translateX(0);}
 .kari-panel-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
@@ -126,6 +206,8 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 .icon-btn{background:none;border:none;color:var(--text3);cursor:pointer;padding:4px;border-radius:4px;font-size:14px;}
 .icon-btn:hover{color:var(--accent);}
 .kari-panel-footer{padding:12px 16px;border-top:1px solid var(--border);}
+
+/* ══ Exception Modal ══ */
 .exc-options{display:flex;flex-direction:column;gap:8px;}
 .exc-option{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;border:1px solid var(--border);cursor:pointer;}
 .exc-option:hover{border-color:var(--accent);}
@@ -136,33 +218,43 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 .exc-label{font-size:13px;}
 .exc-sub-input{display:none;margin-top:8px;}
 .exc-sub-input.show{display:block;}
+
+/* ══ Loading Overlay ══ */
 .loading-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;display:none;align-items:center;justify-content:center;}
 .loading-overlay.show{display:flex;}
 .loading-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px 32px;display:flex;flex-direction:column;align-items:center;gap:12px;}
 .spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
 .loading-msg{font-size:13px;color:var(--text2);}
+
+/* ══ Toast ══ */
 .toast-wrap{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:8px;z-index:1000;}
 .toast{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 16px;font-size:13px;display:flex;align-items:center;gap:8px;min-width:220px;animation:slideIn .2s ease;box-shadow:0 4px 16px rgba(0,0,0,.4);}
 .toast.ok{border-left:3px solid var(--ok);}
 .toast.err{border-left:3px solid var(--danger);}
 .toast.info{border-left:3px solid var(--accent);}
 @keyframes slideIn{from{transform:translateX(20px);opacity:0;}to{transform:translateX(0);opacity:1;}}
+
+/* ══ Footer ══ */
 .page-footer{text-align:center;font-size:10px;color:var(--text3);padding:16px;letter-spacing:.4px;border-top:1px solid var(--border);margin-top:8px;}
 </style>
 </head>
 <body>
+
+<!-- ══ Header ══ -->
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v1.2</div>
+  <div class="header-ver">v1.3</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
-    <button class="btn btn-ghost btn-sm" onclick="toggleKariPanel()">⚙ 仮押さえ設定</button>
+    <button class="btn btn-ghost btn-sm" id="kariSettingBtn" onclick="toggleKariPanel()">⚙ 仮押さえ設定</button>
     <button class="btn btn-primary btn-sm" id="compassBtn" onclick="startLogin()">🔑 COMPASSログイン</button>
   </div>
 </header>
+
+<!-- ══ Controls Bar ══ -->
 <div class="ctrl-bar" id="ctrlBar" style="display:none;">
   <div class="month-nav">
     <button class="month-btn" onclick="changeMonth(-1)">‹</button>
@@ -170,48 +262,80 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
     <button class="month-btn" onclick="changeMonth(1)">›</button>
   </div>
   <div class="ctrl-sep"></div>
-  <select class="pol-select" id="polSelect" onchange="render()"><option value="TOKYO">TOKYO</option><option value="YOKOHAMA">YOKOHAMA</option></select>
-  <select class="dray-select" id="drayFilter" onchange="render()"><option value="">全ドレー</option><option value="池谷">池谷</option><option value="IT">IT</option><option value="国際">国際</option></select>
+  <select class="pol-select" id="polSelect" onchange="render()">
+    <option value="TOKYO">TOKYO</option>
+    <option value="YOKOHAMA">YOKOHAMA</option>
+  </select>
+  <select class="dray-select" id="drayFilter" onchange="render()">
+    <option value="">全ドレー</option>
+    <option value="池谷">池谷</option>
+    <option value="IT">IT</option>
+    <option value="国際">国際</option>
+  </select>
   <div class="ctrl-sep"></div>
-  <button class="btn btn-ghost btn-sm" onclick="refreshCompass()">🔄 COMPASS</button>
+  <button class="btn btn-ghost btn-sm" id="refreshBtn" onclick="refreshCompass()">🔄 COMPASS</button>
   <button class="btn btn-teal btn-sm" onclick="openMailModal()">📧 確定メール送付</button>
 </div>
+
+<!-- ══ Login Screen ══ -->
 <div id="loginScreen">
   <div class="login-card">
     <h2>🚛 ドレースケジュール管理</h2>
     <p>COMPASSにログインして月間スケジュールを管理します</p>
-    <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="startLogin()">🔑 Microsoftでログイン</button>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="startLogin()">
+      🔑 Microsoftでログイン
+    </button>
   </div>
 </div>
+
+<!-- ══ Main App ══ -->
 <div id="mainApp" style="display:none;">
-  <div class="summary-bar" id="summaryBar">
-    <div style="display:flex;flex-direction:column;gap:8px;width:100%;">
-      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-        <span class="summary-title">確定状況</span>
-        <span class="summary-total">COMPASS 確定: 店頭渡し <b id="totalHon">—</b>本</span>
-        <div id="truckBars" style="display:flex;gap:16px;flex:1;flex-wrap:wrap;"></div>
-      </div>
-      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:8px;">
-        <span class="summary-title">購買契約 残量</span>
-        <span class="summary-total">未配定: <b id="totalRemain">—</b>本</span>
-        <div id="packerBars" style="display:flex;gap:16px;flex:1;flex-wrap:wrap;"></div>
-        <button class="btn btn-ghost btn-sm" id="detailToggleBtn" onclick="toggleRemainDetail()" style="white-space:nowrap;">▼ 詳細</button>
-      </div>
-      <div id="remainDetail" style="display:none;border-top:1px dashed var(--border);padding-top:8px;">
-        <div id="remainDetailBody" style="font-size:11px;color:var(--text2);max-height:180px;overflow-y:auto;"></div>
+
+  <!-- 확정 상황 바 -->
+  <div class="confirm-bar" id="confirmBar">
+    <span class="confirm-title">確定状況</span>
+    <span style="font-size:12px;color:var(--text2);">店頭渡し <b id="totalHon" style="color:var(--accent);">—</b>本</span>
+    <div id="truckBars" style="display:flex;gap:14px;flex:1;flex-wrap:wrap;"></div>
+  </div>
+
+  <!-- 2컬럼 레이아웃 -->
+  <div class="app-layout">
+
+    <!-- 좌: 캘린더 -->
+    <div class="calendar-col">
+      <div class="calendar-wrap">
+        <div class="cal-header">
+          <div class="cal-dow">月</div><div class="cal-dow">火</div><div class="cal-dow">水</div>
+          <div class="cal-dow">木</div><div class="cal-dow">金</div>
+          <div class="cal-dow sat">土</div><div class="cal-dow sun">日</div>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
       </div>
     </div>
-  </div>
-  <div class="calendar-wrap">
-    <div class="cal-header">
-      <div class="cal-dow">月</div><div class="cal-dow">火</div><div class="cal-dow">水</div>
-      <div class="cal-dow">木</div><div class="cal-dow">金</div>
-      <div class="cal-dow sat">土</div><div class="cal-dow sun">日</div>
+
+    <!-- 우: 구매현황 패널 -->
+    <div class="purchase-col">
+      <div class="purchase-header">
+        <div class="purchase-header-title">📦 購買契約 残量</div>
+        <div class="purchase-summary-row">
+          <span class="ps-badge total">契約 <span id="totalPurchase">—</span>本</span>
+          <span style="color:var(--text3);">|</span>
+          <span class="ps-badge confirmed">確定 <span id="totalConfirmed">—</span>本</span>
+          <span style="color:var(--text3);">|</span>
+          <span class="ps-badge remain">残量 <span id="totalRemain">—</span>本</span>
+        </div>
+      </div>
+      <div class="purchase-body" id="purchaseBody">
+        <div style="text-align:center;color:var(--text3);padding:20px;font-size:12px;">COMPASSログイン後に表示</div>
+      </div>
     </div>
-    <div class="cal-grid" id="calGrid"></div>
+
   </div>
+
   <div class="page-footer">✦ Powered by LEENAI Automation System</div>
 </div>
+
+<!-- ══ 仮押さえ設定 Panel ══ -->
 <div class="kari-panel" id="kariPanel">
   <div class="kari-panel-header">
     <div class="kari-panel-title">⚙ 仮押さえ 規則設定</div>
@@ -222,10 +346,15 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
     <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="addKariRule()">＋ 規則追加</button>
   </div>
 </div>
+
+<!-- ══ Schedule Modal ══ -->
 <div class="modal-overlay" id="schedModal">
   <div class="modal">
     <div class="modal-header">
-      <div><div class="modal-title" id="schedModalTitle">日程登録 / 確認</div><div class="modal-date" id="schedModalDate"></div></div>
+      <div>
+        <div class="modal-title" id="schedModalTitle">日程登録 / 確認</div>
+        <div class="modal-date" id="schedModalDate"></div>
+      </div>
       <button class="modal-close" onclick="closeSchedModal()">×</button>
     </div>
     <div class="modal-body" id="schedModalBody"></div>
@@ -235,18 +364,46 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
     </div>
   </div>
 </div>
+
+<!-- ══ Exception Modal ══ -->
 <div class="modal-overlay" id="excModal">
   <div class="modal" style="max-width:420px;">
     <div class="modal-header">
-      <div><div class="modal-title" id="excModalTitle">仮押さえ 例外設定</div><div class="modal-date" id="excModalDate"></div></div>
+      <div>
+        <div class="modal-title" id="excModalTitle">仮押さえ 例外設定</div>
+        <div class="modal-date" id="excModalDate"></div>
+      </div>
       <button class="modal-close" onclick="closeExcModal()">×</button>
     </div>
     <div class="modal-body">
       <div class="exc-options" id="excOptions">
-        <div class="exc-option selected" onclick="selectExc(this,'normal')"><div class="exc-radio"></div><div class="exc-label">● 通常通り</div></div>
-        <div class="exc-option" onclick="selectExc(this,'skip')"><div class="exc-radio"></div><div class="exc-label">この日はスキップ</div></div>
-        <div class="exc-option" onclick="selectExc(this,'change_hon')"><div class="exc-radio"></div><div style="flex:1;"><div class="exc-label">台数変更</div><div class="exc-sub-input" id="excHonInput"><input type="number" class="form-input" id="excHon" min="1" max="10" value="2" style="width:80px;"><span style="font-size:12px;color:var(--text2);margin-left:6px;">台</span></div></div></div>
-        <div class="exc-option" onclick="selectExc(this,'change_time')"><div class="exc-radio"></div><div style="flex:1;"><div class="exc-label">時間変更</div><div class="exc-sub-input" id="excTimeInput"><input type="time" class="form-input" id="excTime" value="03:00" style="width:120px;"></div></div></div>
+        <div class="exc-option selected" onclick="selectExc(this,'normal')">
+          <div class="exc-radio"></div>
+          <div class="exc-label">● 通常通り</div>
+        </div>
+        <div class="exc-option" onclick="selectExc(this,'skip')">
+          <div class="exc-radio"></div>
+          <div class="exc-label">この日はスキップ</div>
+        </div>
+        <div class="exc-option" onclick="selectExc(this,'change_hon')">
+          <div class="exc-radio"></div>
+          <div style="flex:1;">
+            <div class="exc-label">台数変更</div>
+            <div class="exc-sub-input" id="excHonInput">
+              <input type="number" class="form-input" id="excHon" min="1" max="10" value="2" style="width:80px;">
+              <span style="font-size:12px;color:var(--text2);margin-left:6px;">台</span>
+            </div>
+          </div>
+        </div>
+        <div class="exc-option" onclick="selectExc(this,'change_time')">
+          <div class="exc-radio"></div>
+          <div style="flex:1;">
+            <div class="exc-label">時間変更</div>
+            <div class="exc-sub-input" id="excTimeInput">
+              <input type="time" class="form-input" id="excTime" value="03:00" style="width:120px;">
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     <div class="modal-footer">
@@ -255,65 +412,1033 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
     </div>
   </div>
 </div>
-<div class="loading-overlay" id="loadingOverlay"><div class="loading-box"><div class="spinner"></div><div class="loading-msg" id="loadingMsg">読み込み中...</div></div></div>
+
+<!-- ══ Loading ══ -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-box">
+    <div class="spinner"></div>
+    <div class="loading-msg" id="loadingMsg">読み込み中...</div>
+  </div>
+</div>
+
+<!-- ══ Toast ══ -->
 <div class="toast-wrap" id="toastWrap"></div>
+
 <script>
-const CFG={CLIENT_ID:'f071a165-5e9b-44bf-b6a1-baba654524db',TENANT_ID:'a56988ff-c2b8-4df8-9727-889ad4205198',DV_URL:'https://orgde512c6f.crm7.dynamics.com',REDIRECT_URI:'https://mhlee205.github.io/DRAY_SCHEDULE/',ENTITY_RULE:'leenai_b05_drayrules',ENTITY_SCHED:'leenai_b05_drayschedules',ENTITY_EXC:'leenai_b05_ruleexceptions'};
-const SCOPE=`${CFG.DV_URL}/user_impersonation openid profile email offline_access`;
-const S={accessToken:null,graphToken:null,tokenExpiry:0,loggedInName:'',loggedInEmail:'',currentYear:new Date().getFullYear(),currentMonth:new Date().getMonth()+1,pol:'TOKYO',kariRules:[],kariExceptions:[],schedules:[],compassTotal:0,compassByTruck:{},purchaseDetails:[],purchaseByPacker:{},purchaseTotalHon:0,remainTotalHon:0,modalDate:null,editingSchedId:null,excRuleId:null,excDate:null,excType:'normal'};
-const INITIAL_KARI_RULES=[{id:'kr1',truck:'池谷',rule:'weekday',timezone:null,hon:1,timerange:'06:00~08:30',pol:'TOKYO',active:true},{id:'kr2',truck:'池谷',rule:'saturday',timezone:null,hon:2,timerange:'06:00~08:30',pol:'TOKYO',active:true},{id:'kr3',truck:'IT',rule:'weekday',timezone:null,hon:1,timerange:'06:00~08:30',pol:'TOKYO',active:true},{id:'kr4',truck:'国際',rule:'weekday',timezone:'午前',hon:2,timerange:'06:00~08:30',pol:'TOKYO',active:true},{id:'kr5',truck:'国際',rule:'weekday',timezone:'午後',hon:2,timerange:null,pol:'TOKYO',active:true},{id:'kr6',truck:'国際',rule:'saturday',timezone:null,hon:2,timerange:null,pol:'TOKYO',active:true}];
-const DEFAULT_STAFF=[{code:'MH_LEE',ja:'李 明鎬',email:'mh_lee@leenearcorp.com'},{code:'HN_JU',ja:'朱 フナム',email:'hn_ju@leenearcorp.com'},{code:'M_OBA',ja:'大場 未由',email:'m_oba@leenearcorp.com'},{code:'M_TAKEUCHI',ja:'竹内 雅将',email:'m_takeuchi@leenearcorp.com'},{code:'SW_LIM',ja:'林 成元',email:'sw_lim@leenearcorp.com'},{code:'JA_LEE',ja:'李 ジュア',email:'ja_lee@leenearcorp.com'},{code:'KX_ZHAN',ja:'セン ガイキン',email:'kx_zhan@leenearcorp.com'}];
-const PACKER_LIST=['兼子(船橋)','兼子(横浜)','兼子(湘南)','兼子(埼玉)','兼子(市原)','東(新井千葉)','東(新井松戸)','東(三弘相模原)','東(三弘朝霞)','東(三弘八王子)','東(こづか本社)','東(こづか横浜北)','東(関東紙業)','東(興栄)','東(日興紙業)','東(川鈴)','山治','熊谷(本社)','熊谷(古河)','紙材(練馬)','紙材(新座)','TPC','ツルミ紙業','共益商会','丸康','育峯','ウブカタ','群馬(前橋)'];
-const TRUCK_LIST=['池谷','IT','国際','山勝','日正','東方','アサヒ','今井','IS','EA'];
-const CT_TYPES=['20ft','40ft','40HQ'];
-const TRUCK_COLORS={'池谷':'#4f8ef7','IT':'#22c55e','国際':'#a78bfa','山勝':'#f59e0b','日正':'#14b8a6'};
-const DRAY_MASTER_BY_GUID={'F60FDAF6-74AD-F011-BBD3-000D3A513B56':{id:'46',short:'門司港運'},'255B16C8-B65B-F011-BEC2-000D3A786F70':{id:'5',short:'明邦運送'},'275B16C8-B65B-F011-BEC2-000D3A786F70':{id:'6',short:'明邦運送(20ft)'},'285B16C8-B65B-F011-BEC2-000D3A786F70':{id:'10',short:'住友倉庫'},'2C5B16C8-B65B-F011-BEC2-000D3A786F70':{id:'11',short:'ぺがさす'},'2E5B16C8-B65B-F011-BEC2-000D3A786F70':{id:'12',short:'鈴与'},'2F5B16C8-B65B-F011-BEC2-000D3A786F70':{id:'13',short:'アサヒ'},'325B16C8-B65B-F011-BEC2-000D3A786F70':{id:'15',short:'IT'},'345B16C8-B65B-F011-BEC2-000D3A786F70':{id:'17',short:'神原'},'385B16C8-B65B-F011-BEC2-000D3A786F70':{id:'19',short:'飯野港運'},'395B16C8-B65B-F011-BEC2-000D3A786F70':{id:'21',short:'C&D'},'3B5B16C8-B65B-F011-BEC2-000D3A786F70':{id:'26',short:'セイユー'},'3C5B16C8-B65B-F011-BEC2-000D3A786F70':{id:'27',short:'住和港運'},'3E5B16C8-B65B-F011-BEC2-000D3A786F70':{id:'28',short:'日通高田'},'405B16C8-B65B-F011-BEC2-000D3A786F70':{id:'29',short:'国際'},'415B16C8-B65B-F011-BEC2-000D3A786F70':{id:'31',short:'SEALAND'},'435B16C8-B65B-F011-BEC2-000D3A786F70':{id:'37',short:'中谷興運'},'485B16C8-B65B-F011-BEC2-000D3A786F70':{id:'40',short:'日正'},'495B16C8-B65B-F011-BEC2-000D3A786F70':{id:'41',short:'日新運輸'},'4A5B16C8-B65B-F011-BEC2-000D3A786F70':{id:'42',short:'昭和陸運'},'4C5B16C8-B65B-F011-BEC2-000D3A786F70':{id:'44',short:'貴社ドレー'},'4CE5BDC2-B65B-F011-BEC2-6045BD62E122':{id:'1',short:'山勝'},'4DE5BDC2-B65B-F011-BEC2-6045BD62E122':{id:'2',short:'リトルウィング'},'8353CEC8-B65B-F011-BEC2-6045BD62E122':{id:'3',short:'池谷'},'8553CEC8-B65B-F011-BEC2-6045BD62E122':{id:'7',short:'金沢港運'},'8853CEC8-B65B-F011-BEC2-6045BD62E122':{id:'8',short:'SS荷役'},'8B53CEC8-B65B-F011-BEC2-6045BD62E122':{id:'9',short:'イーストライン'},'9053CEC8-B65B-F011-BEC2-6045BD62E122':{id:'14',short:'今井'},'9353CEC8-B65B-F011-BEC2-6045BD62E122':{id:'16',short:'愛知海運'},'9453CEC8-B65B-F011-BEC2-6045BD62E122':{id:'18',short:'高松商運'},'9553CEC8-B65B-F011-BEC2-6045BD62E122':{id:'20',short:'IS transport'},'9653CEC8-B65B-F011-BEC2-6045BD62E122':{id:'22',short:'三角海運'},'9753CEC8-B65B-F011-BEC2-6045BD62E122':{id:'23',short:'山昭運輸'},'9953CEC8-B65B-F011-BEC2-6045BD62E122':{id:'24',short:'日本小樽'},'9A53CEC8-B65B-F011-BEC2-6045BD62E122':{id:'25',short:'日本コンテナ'},'9B53CEC8-B65B-F011-BEC2-6045BD62E122':{id:'30',short:'門菱港運'},'9C53CEC8-B65B-F011-BEC2-6045BD62E122':{id:'32',short:'LOTOS'},'9D53CEC8-B65B-F011-BEC2-6045BD62E122':{id:'33',short:'塩竈港運'},'9E53CEC8-B65B-F011-BEC2-6045BD62E122':{id:'34',short:'明邦(国内)'},'9F53CEC8-B65B-F011-BEC2-6045BD62E122':{id:'35',short:'東方'},'A053CEC8-B65B-F011-BEC2-6045BD62E122':{id:'36',short:'KCスカイ'},'A153CEC8-B65B-F011-BEC2-6045BD62E122':{id:'38',short:'栗林商会'},'A353CEC8-B65B-F011-BEC2-6045BD62E122':{id:'39',short:'大運'},'A653CEC8-B65B-F011-BEC2-6045BD62E122':{id:'43',short:'東京急送'},'5B41440C-A11D-F111-8341-7C1E522440DD':{id:'47',short:'ヴェリオス'},'AEF0FD98-FE6C-F011-B4CC-7C1E524B9DC5':{id:'45',short:'日通水島'}};
-const DRAY_MASTER_BY_ID={};Object.values(DRAY_MASTER_BY_GUID).forEach(d=>{DRAY_MASTER_BY_ID[String(d.id)]=d;});
-const ITEM_JA_MAP={'JOCC':'OCC','JONP':'新聞','JOMP':'雑誌','JOCP':'段ボール','JOMX':'ミックス','JOWP':'白上質','JOCP2':'カップ','JOOP':'ONP','JOSP':'上白','JOPP':'PPG','JOPS':'PP','JOPE':'PE','JOPX':'PX','JOAL':'AL','JOST':'スチール','JOSS':'ステンレス','JOCU':'銅'};
-function b64url(buf){return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');}
-async function sha256(str){return b64url(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)));}
-async function startLogin(){const verifier=b64url(crypto.getRandomValues(new Uint8Array(32)));const challenge=await sha256(verifier);const state=Math.random().toString(36).slice(2);sessionStorage.setItem('pkce_v',verifier);sessionStorage.setItem('pkce_s',state);const p=new URLSearchParams({client_id:CFG.CLIENT_ID,response_type:'code',redirect_uri:CFG.REDIRECT_URI,scope:SCOPE,code_challenge:challenge,code_challenge_method:'S256',state});location.href=`https://login.microsoftonline.com/${CFG.TENANT_ID}/oauth2/v2.0/authorize?${p}`;}
-async function exchangeCode(code){const r=await fetch(`https://login.microsoftonline.com/${CFG.TENANT_ID}/oauth2/v2.0/token`,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({grant_type:'authorization_code',client_id:CFG.CLIENT_ID,code,redirect_uri:CFG.REDIRECT_URI,code_verifier:sessionStorage.getItem('pkce_v')})});if(!r.ok)throw new Error(await r.text());return r.json();}
-async function handleCallback(){const p=new URLSearchParams(location.search);const code=p.get('code');if(!code)return false;showLoading('認証中...');try{const t=await exchangeCode(code);S.accessToken=t.access_token;S.tokenExpiry=Date.now()+(t.expires_in-60)*1000;sessionStorage.setItem('b05_token',S.accessToken);sessionStorage.setItem('b05_expiry',S.tokenExpiry);try{const parts=t.id_token?.split('.');if(parts?.length===3){const b64=parts[1].replace(/-/g,'+').replace(/_/g,'/');const bytes=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));const payload=JSON.parse(new TextDecoder('utf-8').decode(bytes));S.loggedInName=payload.name||'';S.loggedInEmail=(payload.email||payload.preferred_username||'').toLowerCase();}}catch(_){}history.replaceState({},'',location.pathname);return true;}catch(e){toast('認証エラー: '+e.message,'err');return false;}finally{hideLoading();}}
-async function dvGet(path){const r=await fetch(`${CFG.DV_URL}/api/data/v9.2/${path}`,{headers:{'Authorization':`Bearer ${S.accessToken}`,'OData-MaxVersion':'4.0','Accept':'application/json'}});if(!r.ok)throw new Error(r.status+': '+await r.text());return r.json();}
-async function init(){const saved=localStorage.getItem('leenai_b05_theme')||'dark';document.documentElement.setAttribute('data-theme',saved);document.getElementById('themeBtn').textContent=saved==='dark'?'☀️ ライト':'🌙 ダーク';loadMockData();S.accessToken=sessionStorage.getItem('b05_token');S.tokenExpiry=parseInt(sessionStorage.getItem('b05_expiry')||'0');if(location.search.includes('code=')){const ok=await handleCallback();if(!ok)return;}if(S.accessToken&&Date.now()<S.tokenExpiry){await onLoggedIn();}else{showApp();}}
-function loadMockData(){const sr=localStorage.getItem('b05_kari_rules');S.kariRules=sr?JSON.parse(sr):[...INITIAL_KARI_RULES];const se=localStorage.getItem('b05_kari_exc');S.kariExceptions=se?JSON.parse(se):[];const ss=localStorage.getItem('b05_schedules');S.schedules=ss?JSON.parse(ss):[];}
-function saveLocalData(){localStorage.setItem('b05_kari_rules',JSON.stringify(S.kariRules));localStorage.setItem('b05_kari_exc',JSON.stringify(S.kariExceptions));localStorage.setItem('b05_schedules',JSON.stringify(S.schedules));}
-async function onLoggedIn(){if(S.loggedInName){const el=document.getElementById('headerUser');el.textContent='👤 '+S.loggedInName;el.style.display='block';}document.getElementById('compassBtn').textContent='✅ COMPASS接続済';showApp();await refreshCompass();}
-function showApp(){document.getElementById('loginScreen').style.display='none';document.getElementById('mainApp').style.display='block';document.getElementById('ctrlBar').style.display='flex';render();}
-async function refreshCompass(){if(!S.accessToken||Date.now()>S.tokenExpiry){toast('COMPASSログインが必要です','err');return;}showLoading('COMPASS取得中...');try{const y=S.currentYear,m=S.currentMonth;const yStr=String(y),mStr=String(m).padStart(2,'0');const lastDay=new Date(y,m,0).getDate();const fromISO=`${yStr}-${mStr}-01T00:00:00Z`,toISO=`${yStr}-${mStr}-${lastDay}T23:59:59Z`;const fromDate=`${yStr}-${mStr}-01`,toDate=`${yStr}-${mStr}-${lastDay}`;showLoading('購買契約 取得中...');const polFilter=`(cr49f_loading_port eq '東京' or cr49f_loading_port eq '横浜')`;const pdFilter=[`cr49f_incoterms eq '店頭'`,polFilter,`cr49f_closing eq false`].join(' and ');const pdFields=['cr49f_purchase_detailid','cr49f_count','cr49f_price','_cr49f_item_id_value','cr49f_loading_port','cr49f_incoterms','cr49f_remark','cr49f_closing','_cr49f_purchase_contract_id_value'].join(',');const pdData=await dvGet(`cr49f_purchase_details?$filter=${pdFilter}&$select=${pdFields}&$top=2000`);const allDetails=pdData.value||[];const pcGuids=[...new Set(allDetails.map(d=>d['_cr49f_purchase_contract_id_value']).filter(Boolean))];const pcMap={},pkMap={};showLoading(`購買契約 詳細取得中... (${pcGuids.length}件)`);await Promise.all(pcGuids.map(async g=>{try{const r=await dvGet(`cr49f_purchase_contracts(${g})?$select=cr49f_purchase_contract_no,cr49f_latest_vanning,_cr49f_packer_id_value`);pcMap[g]={contract_no:r.cr49f_purchase_contract_no||'',latest_vanning:r.cr49f_latest_vanning||'',packer_guid:r['_cr49f_packer_id_value']||''};}catch(_){}}));const pkGuids=[...new Set(Object.values(pcMap).map(p=>p.packer_guid).filter(Boolean))];await Promise.all(pkGuids.map(async g=>{try{const r=await dvGet(`cr49f_packers(${g})?$select=cr49f_packer,cr49f_packer_name`);pkMap[g]=r.cr49f_packer_name||r.cr49f_packer||g.slice(0,8);}catch(_){}}));S.purchaseDetails=allDetails.map(d=>{const pcGuid=d['_cr49f_purchase_contract_id_value']||'';const pc=pcMap[pcGuid]||{};const pkName=pkMap[pc.packer_guid]||'(不明)';const van=pc.latest_vanning||'';return{...d,_contract_no:pc.contract_no,_latest_vanning:van,_packer_name:pkName,_item_ja:ITEM_JA_MAP[d['_cr49f_item_id_value_formatted']]||d['_cr49f_item_id_value_formatted']||''};}).filter(d=>{if(!d._latest_vanning)return false;const van=d._latest_vanning.slice(0,10);return van>=fromDate&&van<=toDate;});S.purchaseByPacker={};S.purchaseTotalHon=0;S.purchaseDetails.forEach(d=>{const pk=d._packer_name;const hon=d.cr49f_count||0;if(!S.purchaseByPacker[pk])S.purchaseByPacker[pk]={total:0,details:[]};S.purchaseByPacker[pk].total+=hon;S.purchaseByPacker[pk].details.push(d);S.purchaseTotalHon+=hon;});showLoading('確定スケジュール取得中...');const ciFilter=[`crcf9_work_date ge ${fromISO}`,`crcf9_work_date le ${toISO}`,`crcf9_incoterms eq '店頭渡し'`].join(' and ');const ciData=await dvGet(`crcf9_container_informations?$filter=${ciFilter}&$select=crcf9_container_informationid,crcf9_work_date,_crcf9_dray_id_value,crcf9_type&$top=2000`);const ciRows=ciData.value||[];S.compassTotal=ciRows.length;S.compassByTruck={};ciRows.forEach(r=>{const guid=(r['_crcf9_dray_id_value']||'').toUpperCase();const dray=DRAY_MASTER_BY_GUID[guid];const key=dray?dray.short:guid.slice(0,8)||'other';S.compassByTruck[key]=(S.compassByTruck[key]||0)+1;});S.remainTotalHon=Math.max(0,S.purchaseTotalHon-ciRows.length);renderSummary();toast(`COMPASS完了: 購買契約${S.purchaseTotalHon}本 / 確定${ciRows.length}本 / 残量${S.remainTotalHon}本`,'ok');}catch(e){toast('COMPASS取得エラー: '+e.message.slice(0,60),'err');console.error(e);}finally{hideLoading();}}
-function render(){S.pol=document.getElementById('polSelect').value;document.getElementById('monthLabel').textContent=`${S.currentYear}年${S.currentMonth}月`;renderSummary();renderCalendar();renderKariPanel();}
-function renderSummary(){document.getElementById('totalHon').textContent=S.compassTotal||'—';const tc=document.getElementById('truckBars');tc.innerHTML='';['池谷','IT','国際'].forEach(truck=>{const color=TRUCK_COLORS[truck]||'#888';const confirmed=S.compassByTruck[truck]||0;const div=document.createElement('div');div.className='truck-bar';div.innerHTML=`<div class="truck-name" style="color:${color}">${truck}</div><div class="truck-stats"><span class="ok">確${confirmed}本</span></div>`;tc.appendChild(div);});document.getElementById('totalRemain').textContent=S.purchaseTotalHon>0?S.remainTotalHon:'—';const pc=document.getElementById('packerBars');pc.innerHTML='';if(S.purchaseTotalHon===0){pc.innerHTML='<span style="font-size:11px;color:var(--text3);">COMPASSログイン後に表示</span>';}else{Object.entries(S.purchaseByPacker).sort((a,b)=>b[1].total-a[1].total).slice(0,8).forEach(([pkName,data])=>{const confirmed=S.compassTotal>0?Math.min(data.total,Math.round(S.compassTotal*data.total/S.purchaseTotalHon)):0;const remain=Math.max(0,data.total-confirmed);const pct=data.total>0?Math.min(100,Math.round(confirmed/data.total*100)):0;const div=document.createElement('div');div.className='truck-bar';div.title=`${pkName}: 契約${data.total}本 / 残量${remain}本`;div.innerHTML=`<div class="truck-name" style="font-size:11px;color:var(--text2);max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escH(pkName.replace('株式会社','(株)').replace('有限会社','(有)'))}</div><div class="truck-progress-wrap" style="width:60px;"><div class="truck-progress" style="width:${pct}%;background:var(--teal);opacity:.7;"></div></div><div class="truck-stats"><span style="color:var(--teal);">${data.total}本</span><span style="color:var(--text3);"> 残<b style="color:${remain>0?'var(--warn)':'var(--ok)'}">${remain}</b></span></div>`;pc.appendChild(div);});}renderRemainDetail();}
-function renderRemainDetail(){const body=document.getElementById('remainDetailBody');if(!body)return;if(!S.purchaseDetails.length){body.innerHTML='<span style="color:var(--text3);">データなし</span>';return;}const lines=[];Object.entries(S.purchaseByPacker).sort((a,b)=>b[1].total-a[1].total).forEach(([pkName,data])=>{lines.push(`<div style="font-weight:700;color:var(--accent);margin-top:8px;margin-bottom:4px;">${escH(pkName)} — ${data.total}本</div>`);const byContract={};data.details.forEach(d=>{const cn=d._contract_no||'(未設定)';if(!byContract[cn])byContract[cn]={hon:0,items:[],van:d._latest_vanning?.slice(0,10)||''};byContract[cn].hon+=(d.cr49f_count||0);const item=d._item_ja||d['_cr49f_item_id_value_formatted']||'';if(item&&!byContract[cn].items.includes(item))byContract[cn].items.push(item);});Object.entries(byContract).forEach(([cn,info])=>{const vanStr=info.van?` 〆${info.van.slice(5)}`:'';const itemStr=info.items.length?` [${info.items.join('/')}]`:'';const priceRow=data.details.find(d=>d._contract_no===cn&&d.cr49f_price);const priceStr=priceRow?.cr49f_price?` ¥${priceRow.cr49f_price}/kg`:'';lines.push(`<div style="display:flex;gap:8px;padding:2px 8px;color:var(--text2);"><span style="color:var(--text3);min-width:100px;">${escH(cn)}</span><span style="color:var(--warn);font-weight:700;">${info.hon}本</span><span>${escH(itemStr)}</span><span style="color:var(--text3);">${priceStr}${vanStr}</span></div>`);});});body.innerHTML=lines.join('');}
-function toggleRemainDetail(){const d=document.getElementById('remainDetail');const btn=document.getElementById('detailToggleBtn');const open=d.style.display!=='none';d.style.display=open?'none':'block';btn.textContent=open?'▼ 詳細':'▲ 閉じる';if(!open)renderRemainDetail();}
-function renderCalendar(){const grid=document.getElementById('calGrid');grid.innerHTML='';const y=S.currentYear,m=S.currentMonth;const days=getMonthDays(y,m);const todayStr=dateStr(new Date());days.forEach(({date,cur})=>{const ds=dateStr(date);const dow=date.getDay();const cell=document.createElement('div');cell.className='cal-cell'+(!cur?' other-month':'')+(ds===todayStr?' today':'')+(dow===6?' sat':'')+(dow===0?' sun':'');if(cur){const{slots,fulfillment}=getKariSlots(ds,dow);cell.classList.add(fulfillment);cell.innerHTML=buildCellHTML(date,ds,slots,S.schedules.filter(s=>s.date===ds),fulfillment);}else{cell.innerHTML=`<div class="cell-header"><span class="cell-date" style="color:var(--text3)">${date.getDate()}</span></div>`;}cell.addEventListener('click',e=>{if(!e.target.closest('.kari-slot')&&!e.target.closest('.sched-add')&&cur)openSchedModal(ds,date);});grid.appendChild(cell);});}
-function buildCellHTML(date,ds,slots,dayScheds,fulfillment){const badgeMap={'all-ok':'badge-ok 充足','partial-ng':'badge-partial 一部未充','all-ng':'badge-ng 未充足'};const[badgeCls,badgeText]=(badgeMap[fulfillment]||'badge-ok 充足').split(' ');const badge=fulfillment!=='all-ok'||slots.length>0?`<span class="cell-badge ${badgeCls}">${badgeText}</span>`:'';let html=`<div class="cell-header"><span class="cell-date">${date.getDate()}</span>${badge}</div>`;const amSlots=slots.filter(s=>s.timezone==='午前'||s.timezone===null);const pmSlots=slots.filter(s=>s.timezone==='午後');if(slots.length>0){html+=`<div class="kari-section"><div class="kari-label">午前</div><div class="kari-slots">${amSlots.map(s=>buildKariSlot(s,ds)).join('')}</div></div>`;if(pmSlots.length>0)html+=`<hr class="kari-divider"><div class="kari-section"><div class="kari-label">午後</div><div class="kari-slots">${pmSlots.map(s=>buildKariSlot(s,ds)).join('')}</div></div>`;}html+='<div class="sched-section">';dayScheds.slice(0,4).forEach(s=>{html+=`<div class="sched-item ${s.status}">${escH(s.truck)} ${escH(s.packer?.split('(')[0]||'')} ${escH(s.time||'')}</div>`;});if(dayScheds.length>4)html+=`<div style="font-size:9px;color:var(--text3);">+${dayScheds.length-4}件</div>`;html+=`<div class="sched-add" onclick="event.stopPropagation();openSchedModal('${ds}',null,true)">＋ 追加</div></div>`;return html;}
-function buildKariSlot(slot,ds){const exc=S.kariExceptions.find(e=>e.ruleId===slot.ruleId&&e.date===ds);let cls=slot.fulfilled?'ok':'ng',text=slot.truck.slice(0,2)+slot.hon;if(exc?.type==='skip'){cls='skip';text=slot.truck.slice(0,2)+'-';}else if(exc?.type==='change_hon'){cls='changed ok';text=slot.truck.slice(0,2)+exc.hon;}return`<span class="kari-slot ${cls}" title="${slot.truck} ${slot.hon}台" onclick="event.stopPropagation();openExcModal('${slot.ruleId}','${ds}')">${text}</span>`;}
-function getKariSlots(ds,dow){const activeRules=S.kariRules.filter(r=>r.pol===S.pol&&r.active&&((r.rule==='weekday'&&dow>=1&&dow<=5)||(r.rule==='saturday'&&dow===6)||(r.rule==='daily')));if(!activeRules.length)return{slots:[],fulfillment:'all-ok'};const dayScheds=S.schedules.filter(s=>s.date===ds);const slots=activeRules.map(rule=>{const exc=S.kariExceptions.find(e=>e.ruleId===rule.id&&e.date===ds);if(exc?.type==='skip')return{ruleId:rule.id,truck:rule.truck,timezone:rule.timezone,hon:rule.hon,fulfilled:true};const hon=exc?.type==='change_hon'?exc.hon:rule.hon;return{ruleId:rule.id,truck:rule.truck,timezone:rule.timezone,hon,fulfilled:dayScheds.filter(s=>s.truck===rule.truck).length>=hon};});const unfulfilled=slots.filter(s=>!s.fulfilled&&!S.kariExceptions.find(e=>e.ruleId===s.ruleId&&e.date===ds&&e.type==='skip'));let fulfillment='all-ok';if(unfulfilled.length>0&&unfulfilled.length<slots.length)fulfillment='partial-ng';else if(unfulfilled.length===slots.length)fulfillment='all-ng';return{slots,fulfillment};}
-function openSchedModal(ds,dateObj,addMode=false){S.modalDate=ds;S.editingSchedId=null;const d=new Date(ds);const wd=['日','月','火','水','木','金','土'][d.getDay()];document.getElementById('schedModalDate').textContent=`${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${wd}）`;const body=document.getElementById('schedModalBody');const dayScheds=S.schedules.filter(s=>s.date===ds);let html='';if(dayScheds.length>0){html+=`<div class="form-section-label">登録済みスケジュール</div><div class="existing-list">`;dayScheds.forEach(s=>{html+=`<div class="existing-item ${s.status}"><div class="ei-truck">${escH(s.truck)}</div><div class="ei-info">${escH(s.packer||'')} ${escH(s.time||'')} ${escH(s.cttype||'')}</div><span class="ei-status status-${s.status}">${statusLabel(s.status)}</span><button class="icon-btn" onclick="deleteSchedule('${s.id}')">🗑</button></div>`;});html+='</div>';}html+=`<div class="form-section-label">新規登録</div><div class="form-row"><div class="form-group"><label class="form-label">ドレー業者 *</label><select class="form-select" id="fTruck">${TRUCK_LIST.map(t=>`<option value="${t}">${t}</option>`).join('')}</select></div><div class="form-group"><label class="form-label">到着時間</label><input type="time" class="form-input" id="fTime" value="08:00"></div></div><div class="form-group full"><label class="form-label">圧縮場</label><select class="form-select" id="fPacker"><option value="">-- 選択 --</option>${PACKER_LIST.map(p=>`<option value="${p}">${p}</option>`).join('')}</select></div><div class="form-row"><div class="form-group"><label class="form-label">CT種別</label><select class="form-select" id="fCttype">${CT_TYPES.map(t=>`<option value="${t}">${t}</option>`).join('')}</select></div><div class="form-group"><label class="form-label">本数</label><input type="number" class="form-input" id="fHon" value="1" min="1" max="20"></div></div><div class="form-group full"><label class="form-label">ステータス</label><div class="status-btns"><div class="status-btn active confirmed" onclick="selStatus(this,'confirmed')">確定</div><div class="status-btn review" onclick="selStatus(this,'review')">調整中</div><div class="status-btn pending" onclick="selStatus(this,'pending')">確認待ち</div></div></div><div class="form-row"><div class="form-group"><label class="form-label">BKG No.</label><input type="text" class="form-input" id="fBkg" placeholder="TYOG..."></div><div class="form-group"><label class="form-label">CY CUT</label><input type="date" class="form-input" id="fCycut"></div></div><div class="form-group full"><label class="form-label">備考</label><input type="text" class="form-input" id="fComment" placeholder="特記事項"></div>`;body.innerHTML=html;document.getElementById('schedModal').classList.add('open');}
-function selStatus(el,status){document.querySelectorAll('.status-btn').forEach(b=>b.classList.remove('active','confirmed','review','pending'));el.classList.add('active',status);el.dataset.status=status;}
-function closeSchedModal(){document.getElementById('schedModal').classList.remove('open');}
-function saveSchedule(){const truck=document.getElementById('fTruck').value;if(!truck){toast('ドレー業者を選択してください','err');return;}const activeStatus=document.querySelector('.status-btn.active');const status=activeStatus?.dataset.status||'pending';const sched={id:'sc_'+Date.now(),date:S.modalDate,truck,time:document.getElementById('fTime').value,packer:document.getElementById('fPacker').value,cttype:document.getElementById('fCttype').value,hon:parseInt(document.getElementById('fHon').value)||1,status,bkgno:document.getElementById('fBkg').value,cycut:document.getElementById('fCycut').value,comment:document.getElementById('fComment').value,pol:S.pol,createdby:S.loggedInEmail};S.schedules.push(sched);saveLocalData();closeSchedModal();render();toast('スケジュールを保存しました','ok');}
-function deleteSchedule(id){if(!confirm('このスケジュールを削除しますか？'))return;S.schedules=S.schedules.filter(s=>s.id!==id);saveLocalData();closeSchedModal();render();toast('削除しました','ok');}
-function openExcModal(ruleId,ds){S.excRuleId=ruleId;S.excDate=ds;const rule=S.kariRules.find(r=>r.id===ruleId);const exc=S.kariExceptions.find(e=>e.ruleId===ruleId&&e.date===ds);const d=new Date(ds);const wd=['日','月','火','水','木','金','土'][d.getDay()];document.getElementById('excModalTitle').textContent=`${rule?.truck||''} 仮押さえ 例外設定`;document.getElementById('excModalDate').textContent=`${d.getMonth()+1}/${d.getDate()}（${wd}）`;S.excType=exc?.type||'normal';document.querySelectorAll('.exc-option').forEach(el=>{el.classList.remove('selected');const t=el.dataset.exctype;if(t===S.excType||(!t&&S.excType==='normal'))el.classList.add('selected');});document.getElementById('excModal').classList.add('open');}
-function selectExc(el,type){S.excType=type;document.querySelectorAll('.exc-option').forEach(o=>o.classList.remove('selected'));el.classList.add('selected');document.getElementById('excHonInput').classList.toggle('show',type==='change_hon');document.getElementById('excTimeInput').classList.toggle('show',type==='change_time');}
-function closeExcModal(){document.getElementById('excModal').classList.remove('open');}
-function saveException(){S.kariExceptions=S.kariExceptions.filter(e=>!(e.ruleId===S.excRuleId&&e.date===S.excDate));if(S.excType!=='normal'){const exc={ruleId:S.excRuleId,date:S.excDate,type:S.excType};if(S.excType==='change_hon')exc.hon=parseInt(document.getElementById('excHon').value)||2;if(S.excType==='change_time')exc.time=document.getElementById('excTime').value;S.kariExceptions.push(exc);}saveLocalData();closeExcModal();render();toast('例外を設定しました','ok');}
-function toggleKariPanel(){document.getElementById('kariPanel').classList.toggle('open');}
-function renderKariPanel(){const body=document.getElementById('kariPanelBody');if(!S.kariRules.length){body.innerHTML='<div style="text-align:center;color:var(--text3);padding:20px;">規則がありません</div>';return;}body.innerHTML=S.kariRules.map(r=>{const rl=r.rule==='weekday'?'平日':r.rule==='saturday'?'土曜':'毎日';const tz=r.timezone?` ${r.timezone}`:'';const color=TRUCK_COLORS[r.truck]||'#888';return`<div class="kari-rule-item"><div class="kari-rule-info"><div class="kari-rule-name" style="color:${color}">${r.truck}</div><div class="kari-rule-detail">${rl}${tz} ${r.hon}台${r.timerange?' / '+r.timerange:''}</div></div><div class="kari-rule-actions"><button class="icon-btn" onclick="toggleKariActive('${r.id}')">${r.active?'✅':'⭕'}</button><button class="icon-btn" onclick="deleteKariRule('${r.id}')">🗑</button></div></div>`;}).join('');}
-function toggleKariActive(id){const rule=S.kariRules.find(r=>r.id===id);if(rule)rule.active=!rule.active;saveLocalData();render();}
-function deleteKariRule(id){if(!confirm('この規則を削除しますか？'))return;S.kariRules=S.kariRules.filter(r=>r.id!==id);saveLocalData();render();}
-function addKariRule(){const truck=prompt('ドレー業者名:');if(!truck)return;S.kariRules.push({id:'kr_'+Date.now(),truck,rule:'weekday',timezone:null,hon:1,timerange:'06:00~08:30',pol:S.pol,active:true});saveLocalData();render();toast('規則を追加しました','ok');}
-function openMailModal(){toast('メール送付機能は近日実装予定です','info');}
-function changeMonth(dir){S.currentMonth+=dir;if(S.currentMonth>12){S.currentMonth=1;S.currentYear++;}if(S.currentMonth<1){S.currentMonth=12;S.currentYear--;}render();if(S.accessToken&&Date.now()<S.tokenExpiry)refreshCompass();}
-function getMonthDays(y,m){const first=new Date(y,m-1,1),last=new Date(y,m,0),days=[];let dow=first.getDay();dow=dow===0?6:dow-1;for(let i=0;i<dow;i++)days.push({date:new Date(y,m-1,-dow+i+1),cur:false});for(let d=1;d<=last.getDate();d++)days.push({date:new Date(y,m-1,d),cur:true});while(days.length%7!==0){const d=days[days.length-1].date;const nd=new Date(d);nd.setDate(d.getDate()+1);days.push({date:nd,cur:false});}return days;}
-function dateStr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
-function escH(v){return v?String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):''}
-function statusLabel(s){return s==='confirmed'?'確定':s==='review'?'調整中':'確認待ち';}
-function toggleTheme(){const cur=document.documentElement.getAttribute('data-theme');const next=cur==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',next);localStorage.setItem('leenai_b05_theme',next);document.getElementById('themeBtn').textContent=next==='dark'?'☀️ ライト':'🌙 ダーク';}
-function showLoading(msg='読み込み中...'){document.getElementById('loadingMsg').textContent=msg;document.getElementById('loadingOverlay').classList.add('show');}
-function hideLoading(){document.getElementById('loadingOverlay').classList.remove('show');}
-function toast(msg,type='ok'){const w=document.getElementById('toastWrap');const t=document.createElement('div');t.className=`toast ${type}`;const icon=type==='ok'?'✅':type==='err'?'❌':'ℹ️';t.innerHTML=`<span>${icon}</span>${escH(msg)}`;w.appendChild(t);setTimeout(()=>{t.style.animation='fadeOut .3s forwards';setTimeout(()=>t.remove(),300);},2800);}
+// ══════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════
+const CFG = {
+  CLIENT_ID:    'f071a165-5e9b-44bf-b6a1-baba654524db',
+  TENANT_ID:    'a56988ff-c2b8-4df8-9727-889ad4205198',
+  DV_URL:       'https://orgde512c6f.crm7.dynamics.com',
+  REDIRECT_URI: 'https://mhlee205.github.io/DRAY_SCHEDULE/',
+  // B-05 Dataverse entity sets (테이블 생성 완료 후 확인 필요)
+  ENTITY_RULE:  'leenai_b05_drayrules',
+  ENTITY_SCHED: 'leenai_b05_drayschedules',
+  ENTITY_EXC:   'leenai_b05_ruleexceptions',
+};
+const SCOPE = `${CFG.DV_URL}/user_impersonation openid profile email offline_access`;
+const GRAPH_SCOPE = 'https://graph.microsoft.com/Mail.Send https://graph.microsoft.com/User.Read openid profile';
+
+// ══════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════
+const S = {
+  accessToken: null,
+  graphToken: null,
+  tokenExpiry: 0,
+  loggedInName: '',
+  loggedInEmail: '',
+  currentYear: new Date().getFullYear(),
+  currentMonth: new Date().getMonth() + 1,
+  pol: 'TOKYO',
+  // B-05 데이터 (Dataverse 연결 전 mock)
+  kariRules: [],        // 仮押さえ 규칙
+  kariExceptions: [],   // 날짜별 예외
+  schedules: [],        // 실제 스케줄
+  // COMPASS 집계 (월간)
+  compassTotal: 0,
+  compassByTruck: {},     // drayGUID → 확정 본수
+  // 구매계약 잔량 (STEP1)
+  purchaseDetails: [],    // 취득한 purchase_detail 전건 (나중에 활용)
+  purchaseByPacker: {},   // packerName → {total, details[]}
+  purchaseTotalHon: 0,    // 구매계약 전체 본수
+  remainTotalHon: 0,      // 잔량 = 구매계약 - 확정
+  // modal 상태
+  modalDate: null,
+  editingSchedId: null,
+  excRuleId: null,
+  excDate: null,
+  excType: 'normal',
+};
+
+// ══════════════════════════════════════════
+// 초기 仮押さえ 규칙 (mock)
+// ══════════════════════════════════════════
+const INITIAL_KARI_RULES = [
+  {id:'kr1', truck:'池谷', rule:'weekday', timezone:null,  hon:1, timerange:'06:00~08:30', pol:'TOKYO', active:true},
+  {id:'kr2', truck:'池谷', rule:'saturday',timezone:null,  hon:2, timerange:'06:00~08:30', pol:'TOKYO', active:true},
+  {id:'kr3', truck:'IT',   rule:'weekday', timezone:null,  hon:1, timerange:'06:00~08:30', pol:'TOKYO', active:true},
+  {id:'kr4', truck:'国際', rule:'weekday', timezone:'午前', hon:2, timerange:'06:00~08:30', pol:'TOKYO', active:true},
+  {id:'kr5', truck:'国際', rule:'weekday', timezone:'午後', hon:2, timerange:null,          pol:'TOKYO', active:true},
+  {id:'kr6', truck:'国際', rule:'saturday',timezone:null,  hon:2, timerange:null,          pol:'TOKYO', active:true},
+];
+
+// ══════════════════════════════════════════
+// DEFAULT STAFF
+// ══════════════════════════════════════════
+const DEFAULT_STAFF = [
+  {code:'MH_LEE',     ja:'李 明鎬',      email:'mh_lee@leenearcorp.com'},
+  {code:'HN_JU',      ja:'朱 フナム',     email:'hn_ju@leenearcorp.com'},
+  {code:'M_OBA',      ja:'大場 未由',     email:'m_oba@leenearcorp.com'},
+  {code:'M_TAKEUCHI', ja:'竹内 雅将',     email:'m_takeuchi@leenearcorp.com'},
+  {code:'SW_LIM',     ja:'林 成元',       email:'sw_lim@leenearcorp.com'},
+  {code:'JA_LEE',     ja:'李 ジュア',     email:'ja_lee@leenearcorp.com'},
+  {code:'KX_ZHAN',    ja:'セン ガイキン', email:'kx_zhan@leenearcorp.com'},
+];
+
+const PACKER_LIST = [
+  '兼子(船橋)','兼子(横浜)','兼子(湘南)','兼子(埼玉)','兼子(市原)',
+  '東(新井千葉)','東(新井松戸)','東(三弘相模原)','東(三弘朝霞)','東(三弘八王子)',
+  '東(こづか本社)','東(こづか横浜北)','東(関東紙業)','東(興栄)','東(日興紙業)',
+  '東(川鈴)','山治','熊谷(本社)','熊谷(古河)','紙材(練馬)','紙材(新座)',
+  'TPC','ツルミ紙業','共益商会','丸康','育峯','ウブカタ','群馬(前橋)',
+];
+const TRUCK_LIST = ['池谷','IT','国際','山勝','日正','東方','アサヒ','今井','IS','EA'];
+const CT_TYPES = ['20ft','40ft','40HQ'];
+const TRUCK_COLORS = {'池谷':'#4f8ef7','IT':'#22c55e','国際':'#a78bfa','山勝':'#f59e0b','日正':'#14b8a6'};
+
+// ══════════════════════════════════════════
+// AUTH (PKCE)
+// ══════════════════════════════════════════
+function b64url(buf){ return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,''); }
+async function sha256(str){ return b64url(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str))); }
+
+async function startLogin(){
+  const verifier = b64url(crypto.getRandomValues(new Uint8Array(32)));
+  const challenge = await sha256(verifier);
+  const state = Math.random().toString(36).slice(2);
+  sessionStorage.setItem('pkce_v', verifier);
+  sessionStorage.setItem('pkce_s', state);
+  const p = new URLSearchParams({
+    client_id: CFG.CLIENT_ID, response_type:'code',
+    redirect_uri: CFG.REDIRECT_URI, scope: SCOPE,
+    code_challenge: challenge, code_challenge_method:'S256', state
+  });
+  location.href = `https://login.microsoftonline.com/${CFG.TENANT_ID}/oauth2/v2.0/authorize?${p}`;
+}
+
+async function exchangeCode(code){
+  const r = await fetch(`https://login.microsoftonline.com/${CFG.TENANT_ID}/oauth2/v2.0/token`,{
+    method:'POST',
+    headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body: new URLSearchParams({
+      grant_type:'authorization_code', client_id:CFG.CLIENT_ID,
+      code, redirect_uri:CFG.REDIRECT_URI,
+      code_verifier: sessionStorage.getItem('pkce_v')
+    })
+  });
+  if(!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+async function handleCallback(){
+  const p = new URLSearchParams(location.search);
+  const code = p.get('code');
+  if(!code) return false;
+  showLoading('認証中...');
+  try {
+    const t = await exchangeCode(code);
+    S.accessToken = t.access_token;
+    S.tokenExpiry = Date.now() + (t.expires_in - 60) * 1000;
+    sessionStorage.setItem('b05_token', S.accessToken);
+    sessionStorage.setItem('b05_expiry', S.tokenExpiry);
+    // JWT decode for user info
+    try {
+      const parts = t.id_token?.split('.');
+      if(parts?.length === 3){
+        const b64 = parts[1].replace(/-/g,'+').replace(/_/g,'/');
+        const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+        const payload = JSON.parse(new TextDecoder('utf-8').decode(bytes));
+        S.loggedInName = payload.name || '';
+        S.loggedInEmail = (payload.email || payload.preferred_username || '').toLowerCase();
+      }
+    } catch(_){}
+    history.replaceState({}, '', location.pathname);
+    return true;
+  } catch(e){
+    toast('認証エラー: ' + e.message, 'err');
+    return false;
+  } finally { hideLoading(); }
+}
+
+async function dvGet(path){
+  const r = await fetch(`${CFG.DV_URL}/api/data/v9.2/${path}`,{
+    headers:{'Authorization':`Bearer ${S.accessToken}`,'OData-MaxVersion':'4.0','Accept':'application/json'}
+  });
+  if(!r.ok) throw new Error(r.status + ': ' + await r.text());
+  return r.json();
+}
+
+// ══════════════════════════════════════════
+// APP INIT
+// ══════════════════════════════════════════
+async function init(){
+  // 테마 복원
+  const saved = localStorage.getItem('leenai_b05_theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', saved);
+  document.getElementById('themeBtn').textContent = saved === 'dark' ? '☀️ ライト' : '🌙 ダーク';
+
+  // mock 데이터 로드 (실제 Dataverse 연결 전)
+  loadMockData();
+
+  // 토큰 복원 시도
+  S.accessToken = sessionStorage.getItem('b05_token');
+  S.tokenExpiry = parseInt(sessionStorage.getItem('b05_expiry') || '0');
+
+  // callback 처리
+  if(location.search.includes('code=')){
+    const ok = await handleCallback();
+    if(!ok) return;
+  }
+
+  if(S.accessToken && Date.now() < S.tokenExpiry){
+    await onLoggedIn();
+  } else {
+    // 로그인 없이도 mock 데이터로 캘린더 보여주기
+    showApp();
+  }
+}
+
+function loadMockData(){
+  // 仮押さえ 규칙 — localStorage에서 복원 or 초기값
+  const savedRules = localStorage.getItem('b05_kari_rules');
+  S.kariRules = savedRules ? JSON.parse(savedRules) : [...INITIAL_KARI_RULES];
+
+  const savedExc = localStorage.getItem('b05_kari_exc');
+  S.kariExceptions = savedExc ? JSON.parse(savedExc) : [];
+
+  const savedSched = localStorage.getItem('b05_schedules');
+  S.schedules = savedSched ? JSON.parse(savedSched) : [];
+}
+
+function saveLocalData(){
+  localStorage.setItem('b05_kari_rules', JSON.stringify(S.kariRules));
+  localStorage.setItem('b05_kari_exc', JSON.stringify(S.kariExceptions));
+  localStorage.setItem('b05_schedules', JSON.stringify(S.schedules));
+}
+
+async function onLoggedIn(){
+  if(S.loggedInName){
+    const el = document.getElementById('headerUser');
+    el.textContent = '👤 ' + S.loggedInName;
+    el.style.display = 'block';
+  }
+  document.getElementById('compassBtn').textContent = '✅ COMPASS接続済';
+  showApp();
+  await refreshCompass();
+}
+
+function showApp(){
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'block';
+  document.getElementById('ctrlBar').style.display = 'flex';
+  render();
+}
+
+// ══════════════════════════════════════════
+// DRAY MASTER (PO_TOOL에서 복사 — 46건)
+// ══════════════════════════════════════════
+const DRAY_MASTER_BY_GUID = {
+  'F60FDAF6-74AD-F011-BBD3-000D3A513B56':{id:'46',short:'門司港運',name:'門司港運株式会社'},
+  '255B16C8-B65B-F011-BEC2-000D3A786F70':{id:'5', short:'明邦運送',name:'明邦運送'},
+  '275B16C8-B65B-F011-BEC2-000D3A786F70':{id:'6', short:'明邦運送(20ft)',name:'明邦運送'},
+  '285B16C8-B65B-F011-BEC2-000D3A786F70':{id:'10',short:'住友倉庫',name:'住友倉庫'},
+  '2C5B16C8-B65B-F011-BEC2-000D3A786F70':{id:'11',short:'ぺがさす',name:'ぺがさす物流株式会社'},
+  '2E5B16C8-B65B-F011-BEC2-000D3A786F70':{id:'12',short:'鈴与',name:'鈴与株式会社'},
+  '2F5B16C8-B65B-F011-BEC2-000D3A786F70':{id:'13',short:'アサヒ',name:'株式会社アサヒ'},
+  '325B16C8-B65B-F011-BEC2-000D3A786F70':{id:'15',short:'IT',name:'株式会社ITトレーディング'},
+  '345B16C8-B65B-F011-BEC2-000D3A786F70':{id:'17',short:'神原',name:'神原ロジスティクス株式会社'},
+  '385B16C8-B65B-F011-BEC2-000D3A786F70':{id:'19',short:'飯野港運',name:'飯野港運株式会社'},
+  '395B16C8-B65B-F011-BEC2-000D3A786F70':{id:'21',short:'C&D',name:'有限会社C&D'},
+  '3B5B16C8-B65B-F011-BEC2-000D3A786F70':{id:'26',short:'セイユー',name:'セイユー商事株式会社'},
+  '3C5B16C8-B65B-F011-BEC2-000D3A786F70':{id:'27',short:'住和港運',name:'住和港運株式会社'},
+  '3E5B16C8-B65B-F011-BEC2-000D3A786F70':{id:'28',short:'日通高田',name:'日本通運株式会社'},
+  '405B16C8-B65B-F011-BEC2-000D3A786F70':{id:'29',short:'国際',name:'国際コンテナ輸送株式会社京浜支店'},
+  '415B16C8-B65B-F011-BEC2-000D3A786F70':{id:'31',short:'SEALAND',name:'SEALAND'},
+  '435B16C8-B65B-F011-BEC2-000D3A786F70':{id:'37',short:'中谷興運',name:'中谷興運株式会社'},
+  '485B16C8-B65B-F011-BEC2-000D3A786F70':{id:'40',short:'日正',name:'日正運輸株式会社'},
+  '495B16C8-B65B-F011-BEC2-000D3A786F70':{id:'41',short:'日新運輸',name:'日新運輸株式会社'},
+  '4A5B16C8-B65B-F011-BEC2-000D3A786F70':{id:'42',short:'昭和陸運',name:'昭和陸運株式会社'},
+  '4C5B16C8-B65B-F011-BEC2-000D3A786F70':{id:'44',short:'貴社ドレー',name:'貴社ドレー'},
+  '4CE5BDC2-B65B-F011-BEC2-6045BD62E122':{id:'1', short:'山勝',name:'株式会社山勝ロジスティックス'},
+  '4DE5BDC2-B65B-F011-BEC2-6045BD62E122':{id:'2', short:'リトルウィング',name:'リトルウィング'},
+  '8353CEC8-B65B-F011-BEC2-6045BD62E122':{id:'3', short:'池谷',name:'池谷運送株式会社'},
+  '8553CEC8-B65B-F011-BEC2-6045BD62E122':{id:'7', short:'金沢港運',name:'金沢港運'},
+  '8853CEC8-B65B-F011-BEC2-6045BD62E122':{id:'8', short:'SS荷役',name:'株式会社SS荷役'},
+  '8B53CEC8-B65B-F011-BEC2-6045BD62E122':{id:'9', short:'イーストライン',name:'イーストライン株式会社'},
+  '9053CEC8-B65B-F011-BEC2-6045BD62E122':{id:'14',short:'今井',name:'今井商運株式会社'},
+  '9353CEC8-B65B-F011-BEC2-6045BD62E122':{id:'16',short:'愛知海運',name:'愛知海運株式会社'},
+  '9453CEC8-B65B-F011-BEC2-6045BD62E122':{id:'18',short:'高松商運',name:'高松商運株式会社'},
+  '9553CEC8-B65B-F011-BEC2-6045BD62E122':{id:'20',short:'IS transport',name:'株式会社IS transport'},
+  '9653CEC8-B65B-F011-BEC2-6045BD62E122':{id:'22',short:'三角海運',name:'三角海運株式会社'},
+  '9753CEC8-B65B-F011-BEC2-6045BD62E122':{id:'23',short:'山昭運輸',name:'山昭運輸株式会社'},
+  '9953CEC8-B65B-F011-BEC2-6045BD62E122':{id:'24',short:'日本小樽',name:'日本通運株式会社小樽支店'},
+  '9A53CEC8-B65B-F011-BEC2-6045BD62E122':{id:'25',short:'日本コンテナ',name:'日本コンテナ輸送株式会社京浜支店'},
+  '9B53CEC8-B65B-F011-BEC2-6045BD62E122':{id:'30',short:'門菱港運',name:'門菱港運株式会社'},
+  '9C53CEC8-B65B-F011-BEC2-6045BD62E122':{id:'32',short:'LOTOS',name:'LOTOS OSAKA'},
+  '9D53CEC8-B65B-F011-BEC2-6045BD62E122':{id:'33',short:'塩竈港運',name:'NX仙台塩竈港運株式会社'},
+  '9E53CEC8-B65B-F011-BEC2-6045BD62E122':{id:'34',short:'明邦(国内)',name:'明邦運送(国内)'},
+  '9F53CEC8-B65B-F011-BEC2-6045BD62E122':{id:'35',short:'東方',name:'東方国際物流株式会社'},
+  'A053CEC8-B65B-F011-BEC2-6045BD62E122':{id:'36',short:'KCスカイ',name:'株式会社KCスカイ物流'},
+  'A153CEC8-B65B-F011-BEC2-6045BD62E122':{id:'38',short:'栗林商会',name:'株式会社栗林商会'},
+  'A353CEC8-B65B-F011-BEC2-6045BD62E122':{id:'39',short:'大運',name:'株式会社大運'},
+  'A653CEC8-B65B-F011-BEC2-6045BD62E122':{id:'43',short:'東京急送',name:'株式会社東京急送'},
+  '5B41440C-A11D-F111-8341-7C1E522440DD':{id:'47',short:'ヴェリオス',name:'株式会社ヴェリオス'},
+  'AEF0FD98-FE6C-F011-B4CC-7C1E524B9DC5':{id:'45',short:'日通水島',name:'日本通運株式会社水島海運支店'},
+};
+const DRAY_MASTER_BY_ID = {};
+Object.values(DRAY_MASTER_BY_GUID).forEach(d => { DRAY_MASTER_BY_ID[String(d.id)] = d; });
+
+// ITEM 일본어명 (PO_TOOL ITEM_JA_MAP에서 복사)
+const ITEM_JA_MAP = {
+  'JOCC':'OCC','JONP':'新聞','JOMP':'雑誌','JOCP':'段ボール','JOMX':'ミックス',
+  'JOWP':'白上質','JOCP2':'カップ','JOOP':'ONP','JOSP':'上白','JOPP':'PPG',
+  'JOPS':'PP','JOPE':'PE','JOPX':'PX','JOAL':'AL','JOST':'スチール',
+  'JOSS':'ステンレス','JOCU':'銅',
+};
+
+// ══════════════════════════════════════════
+// COMPASS 집계 (STEP1 + STEP2 동시)
+// ══════════════════════════════════════════
+async function refreshCompass(){
+  if(!S.accessToken || Date.now() > S.tokenExpiry){
+    toast('COMPASSログインが必要です', 'err');
+    return;
+  }
+  showLoading('COMPASS取得中...');
+  try {
+    const y = S.currentYear, m = S.currentMonth;
+    const yStr = String(y);
+    const mStr = String(m).padStart(2,'0');
+    const lastDay = new Date(y, m, 0).getDate();
+    const fromISO = `${yStr}-${mStr}-01T00:00:00Z`;
+    const toISO   = `${yStr}-${mStr}-${lastDay}T23:59:59Z`;
+    // 作業期限の月フィルタ (DateOnly形式)
+    const fromDate = `${yStr}-${mStr}-01`;
+    const toDate   = `${yStr}-${mStr}-${lastDay}`;
+
+    // ── STEP 1: 구매계약 잔량 ──
+    // cr49f_purchase_details WHERE 店頭 AND TOKYO/YOKOHAMA AND closing=false AND latest_vanning 해당월
+    showLoading('購買契約 取得中...');
+    const polFilter = `(cr49f_loading_port eq '東京' or cr49f_loading_port eq '横浜')`;
+    const pdFilter = [
+      `cr49f_incoterms eq '店頭'`,
+      polFilter,
+      `cr49f_closing eq false`,
+    ].join(' and ');
+    const pdFields = [
+      'cr49f_purchase_detailid',
+      'cr49f_count',             // 本数
+      'cr49f_price',             // 単価(¥/kg)
+      '_cr49f_item_id_value',    // 品目 GUID (item_idname は REST API 非対応)
+      'cr49f_loading_port',      // POL
+      'cr49f_incoterms',    // 渡し条件
+      'cr49f_remark',       // 備考
+      'cr49f_closing',      // 締め
+      '_cr49f_purchase_contract_id_value', // 구매계약 GUID
+    ].join(',');
+
+    const pdData = await dvGet(
+      `cr49f_purchase_details?$filter=${pdFilter}&$select=${pdFields}&$top=2000`
+    );
+    const allDetails = pdData.value || [];
+
+    // 구매계약 GUID 일괄 취득
+    const pcGuids = [...new Set(allDetails.map(d => d['_cr49f_purchase_contract_id_value']).filter(Boolean))];
+    const pcMap = {};  // guid → {contract_no, latest_vanning, packer_guid}
+    const pkMap = {};  // packer_guid → packer_name
+    showLoading(`購買契約 詳細取得中... (${pcGuids.length}件)`);
+    await Promise.all(pcGuids.map(async g => {
+      try {
+        const r = await dvGet(
+          `cr49f_purchase_contracts(${g})?$select=cr49f_purchase_contract_no,cr49f_latest_vanning,_cr49f_packer_id_value`
+        );
+        pcMap[g] = {
+          contract_no:    r.cr49f_purchase_contract_no || '',
+          latest_vanning: r.cr49f_latest_vanning || '',
+          packer_guid:    r['_cr49f_packer_id_value'] || '',
+        };
+      } catch(_){}
+    }));
+
+    // Packer GUID 일괄 취득
+    const pkGuids = [...new Set(Object.values(pcMap).map(p => p.packer_guid).filter(Boolean))];
+    await Promise.all(pkGuids.map(async g => {
+      try {
+        const r = await dvGet(`cr49f_packers(${g})?$select=cr49f_packer,cr49f_packer_name`);
+        pkMap[g] = r.cr49f_packer_name || r.cr49f_packer || g.slice(0,8);
+      } catch(_){}
+    }));
+
+    // 해당월 latest_vanning 필터 + 데이터 보강
+    S.purchaseDetails = allDetails
+      .map(d => {
+        const pcGuid = d['_cr49f_purchase_contract_id_value'] || '';
+        const pc = pcMap[pcGuid] || {};
+        const pkName = pkMap[pc.packer_guid] || '(不明)';
+        const van = pc.latest_vanning || '';
+        return {
+          ...d,
+          _contract_no:    pc.contract_no,
+          _latest_vanning: van,
+          _packer_name:    pkName,
+          _item_ja:        ITEM_JA_MAP[d['_cr49f_item_id_value_formatted']] || d['_cr49f_item_id_value_formatted'] || '',
+        };
+      })
+      .filter(d => {
+        // latest_vanning が해당월인 것만
+        if(!d._latest_vanning) return false;
+        const van = d._latest_vanning.slice(0,10); // YYYY-MM-DD
+        return van >= fromDate && van <= toDate;
+      });
+
+    // Packer별 집계
+    S.purchaseByPacker = {};
+    S.purchaseTotalHon = 0;
+    S.purchaseDetails.forEach(d => {
+      const pk = d._packer_name;
+      const hon = d.cr49f_count || 0;
+      if(!S.purchaseByPacker[pk]) S.purchaseByPacker[pk] = {total:0, details:[]};
+      S.purchaseByPacker[pk].total += hon;
+      S.purchaseByPacker[pk].details.push(d);
+      S.purchaseTotalHon += hon;
+    });
+
+    // ── STEP 1b: ITEM 명칭 조회 ──
+    showLoading('品目情報取得中...');
+    const itemGuids = [...new Set(S.purchaseDetails.map(d => d['_cr49f_item_id_value']).filter(Boolean))];
+    const itemMap = {}; // guid → {code, ja}
+    await Promise.all(itemGuids.map(async g => {
+      try {
+        const r = await dvGet(`cr49f_items(${g})?$select=cr49f_item,crcf9_item_japan`);
+        itemMap[g.toUpperCase()] = { code: r.cr49f_item || '', ja: r.crcf9_item_japan || r.cr49f_item || '' };
+      } catch(_){}
+    }));
+    // detail에 item 이름 반영
+    S.purchaseDetails.forEach(d => {
+      const guid = (d['_cr49f_item_id_value'] || '').toUpperCase();
+      const item = itemMap[guid];
+      d._item_ja = item ? (item.ja || item.code) : '';
+    });
+    // ── STEP 2: 확정 본수 (crcf9_container_informations) ──
+    showLoading('確定スケジュール取得中...');
+    const ciFilter = [
+      `crcf9_work_date ge ${fromISO}`,
+      `crcf9_work_date le ${toISO}`,
+      `crcf9_incoterms eq '店頭渡し'`,
+    ].join(' and ');
+    const ciFields = 'crcf9_container_informationid,crcf9_work_date,_crcf9_dray_id_value,crcf9_type,_crcf9_region_japan_id_value';
+    const ciData = await dvGet(
+      `crcf9_container_informations?$filter=${ciFilter}&$select=${ciFields}&$top=2000`
+    );
+    // POL フィルタ (TOKYO/YOKOHAMA) — FormattedValue で判定
+    const ciRows = (ciData.value || []);
+    S.compassTotal = ciRows.length;
+    S.compassByTruck = {};
+    ciRows.forEach(r => {
+      const guid = (r['_crcf9_dray_id_value'] || '').toUpperCase();
+      const dray = DRAY_MASTER_BY_GUID[guid];
+      const key = dray ? dray.short : guid.slice(0,8) || 'other';
+      S.compassByTruck[key] = (S.compassByTruck[key] || 0) + 1;
+    });
+
+    // ── STEP 3: 잔량 계산 ──
+    const confirmedTotal = ciRows.length;
+    S.remainTotalHon = Math.max(0, S.purchaseTotalHon - confirmedTotal);
+
+    renderSummary();
+    toast(`COMPASS完了: 購買契約${S.purchaseTotalHon}本 / 確定${confirmedTotal}本 / 残量${S.remainTotalHon}本`, 'ok');
+  } catch(e){
+    toast('COMPASS取得エラー: ' + e.message.slice(0,60), 'err');
+    console.error(e);
+  } finally { hideLoading(); }
+}
+
+// ══════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════
+function render(){
+  S.pol = document.getElementById('polSelect').value;
+  const ml = `${S.currentYear}年${S.currentMonth}月`;
+  document.getElementById('monthLabel').textContent = ml;
+  renderSummary();
+  renderCalendar();
+  renderKariPanel();
+}
+
+function renderSummary(){
+  // 상단 확정 바
+  document.getElementById('totalHon').textContent = S.compassTotal || '—';
+  const tc = document.getElementById('truckBars');
+  tc.innerHTML = '';
+  ['池谷','IT','国際'].forEach(truck => {
+    const color = TRUCK_COLORS[truck] || '#888';
+    const confirmed = S.compassByTruck[truck] || 0;
+    const div = document.createElement('div');
+    div.className = 'truck-chip';
+    div.innerHTML = `<span style="color:${color};font-weight:700;">${truck}</span><span style="color:var(--ok);">確${confirmed}本</span>`;
+    tc.appendChild(div);
+  });
+  // 우측 패널 집계
+  if(S.purchaseTotalHon > 0){
+    document.getElementById('totalPurchase').textContent = S.purchaseTotalHon;
+    document.getElementById('totalConfirmed').textContent = S.compassTotal;
+    document.getElementById('totalRemain').textContent = S.remainTotalHon;
+  }
+  renderPurchasePanel();
+}
+
+function renderPurchasePanel(){
+  const body = document.getElementById('purchaseBody');
+  if(!body) return;
+  if(!S.purchaseDetails.length){
+    body.innerHTML = '<div style="text-align:center;color:var(--text3);padding:20px;font-size:12px;">COMPASSログイン後に表示</div>';
+    return;
+  }
+
+  let html = '';
+  Object.entries(S.purchaseByPacker)
+    .sort((a,b) => b[1].total - a[1].total)
+    .forEach(([pkName, data], idx) => {
+      const shortName = pkName.replace('株式会社','').replace('有限会社','').replace('東京紙パルプ交易','TPC').trim();
+      const pct = S.compassTotal > 0 ? Math.min(100, Math.round(S.compassTotal * data.total / S.purchaseTotalHon)) : 0;
+
+      // Plant(備考)별 그룹
+      const byPlant = {};
+      data.details.forEach(d => {
+        const plant = d.cr49f_remark?.trim() || '(本社)';
+        if(!byPlant[plant]) byPlant[plant] = {hon:0, items:[], contracts:[], price:null};
+        byPlant[plant].hon += (d.cr49f_count || 0);
+        if(d.cr49f_price && !byPlant[plant].price) byPlant[plant].price = d.cr49f_price;
+        // ITEM
+        const item = d._item_ja || '';
+        if(item && !byPlant[plant].items.includes(item)) byPlant[plant].items.push(item);
+        // 계약번호
+        if(d._contract_no && !byPlant[plant].contracts.includes(d._contract_no)) byPlant[plant].contracts.push(d._contract_no);
+      });
+
+      const plantRows = Object.entries(byPlant)
+        .sort((a,b) => b[1].hon - a[1].hon)
+        .map(([plant, info]) => {
+          const itemStr = info.items.length ? info.items.join('/') : '—';
+          const priceStr = info.price ? `¥${info.price}/kg` : '';
+          return `<div class="plant-row">
+            <span class="plant-name">${escH(plant)}</span>
+            <span class="plant-item">${escH(itemStr)}</span>
+            <span class="plant-count">${info.hon}本</span>
+            <span class="plant-price">${priceStr}</span>
+          </div>`;
+        }).join('');
+
+      const cardId = 'pk_' + idx;
+      html += `
+      <div class="pk-card">
+        <div class="pk-card-header" onclick="togglePkCard('${cardId}')">
+          <div class="pk-name">${escH(shortName)}</div>
+          <div class="pk-total">${data.total}本</div>
+          <div class="pk-chevron open" id="${cardId}_chev">›</div>
+        </div>
+        <div class="pk-progress"><div class="pk-progress-fill" style="width:${pct}%;"></div></div>
+        <div class="pk-body open" id="${cardId}">
+          ${plantRows}
+        </div>
+      </div>`;
+    });
+
+  body.innerHTML = html;
+}
+
+function togglePkCard(id){
+  const body = document.getElementById(id);
+  const chev = document.getElementById(id + '_chev');
+  body.classList.toggle('open');
+  chev.classList.toggle('open');
+}
+
+
+function calcExpectedHon(truck, year, month){
+  const rules = S.kariRules.filter(r => r.truck === truck && r.pol === S.pol && r.active);
+  if(!rules.length) return 0;
+  let total = 0;
+  const lastDay = new Date(year, month, 0).getDate();
+  for(let d = 1; d <= lastDay; d++){
+    const date = new Date(year, month-1, d);
+    const dow = date.getDay(); // 0=Sun,6=Sat
+    const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    rules.forEach(rule => {
+      // 예외 확인
+      const exc = S.kariExceptions.find(e => e.ruleId === rule.id && e.date === dateStr);
+      if(exc?.type === 'skip') return;
+      let hon = exc?.type === 'change_hon' ? exc.hon : rule.hon;
+      if(rule.rule === 'weekday' && dow >= 1 && dow <= 5) total += hon;
+      else if(rule.rule === 'saturday' && dow === 6) total += hon;
+      else if(rule.rule === 'daily') total += hon;
+    });
+  }
+  return total;
+}
+
+function renderCalendar(){
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+  const y = S.currentYear, m = S.currentMonth;
+  const days = getMonthDays(y, m);
+  const todayStr = dateStr(new Date());
+
+  days.forEach(({date, cur}) => {
+    const ds = dateStr(date);
+    const dow = date.getDay();
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell' +
+      (!cur ? ' other-month' : '') +
+      (ds === todayStr ? ' today' : '') +
+      (dow === 6 ? ' sat' : '') +
+      (dow === 0 ? ' sun' : '');
+
+    if(cur) {
+      // 仮押さえ 상태 계산
+      const {slots, fulfillment} = getKariSlots(ds, dow);
+      cell.classList.add(fulfillment);
+
+      // 実際スケジュール
+      const dayScheds = S.schedules.filter(s => s.date === ds);
+
+      cell.innerHTML = buildCellHTML(date, ds, slots, dayScheds, fulfillment);
+    } else {
+      cell.innerHTML = `<div class="cell-header"><span class="cell-date" style="color:var(--text3)">${date.getDate()}</span></div>`;
+    }
+
+    cell.addEventListener('click', e => {
+      if(!e.target.closest('.kari-slot') && !e.target.closest('.sched-add') && cur) {
+        openSchedModal(ds, date);
+      }
+    });
+
+    grid.appendChild(cell);
+  });
+}
+
+function buildCellHTML(date, ds, slots, dayScheds, fulfillment){
+  // Header
+  const badgeMap = {'all-ok':'badge-ok 充足','partial-ng':'badge-partial 一部未充','all-ng':'badge-ng 未充足'};
+  const [badgeCls, badgeText] = (badgeMap[fulfillment] || 'badge-ok 充足').split(' ');
+  const hasBadge = fulfillment !== 'all-ok' || slots.length > 0;
+  const badge = hasBadge ? `<span class="cell-badge ${badgeCls}">${badgeText}</span>` : '';
+
+  let html = `
+    <div class="cell-header">
+      <span class="cell-date">${date.getDate()}</span>
+      ${badge}
+    </div>
+  `;
+
+  // 仮押さえ (午前/午後)
+  const amSlots = slots.filter(s => s.timezone === '午前' || s.timezone === null);
+  const pmSlots = slots.filter(s => s.timezone === '午後');
+
+  if(slots.length > 0){
+    html += `<div class="kari-section">
+      <div class="kari-label">午前</div>
+      <div class="kari-slots">${amSlots.map(s => buildKariSlot(s, ds)).join('')}</div>
+    </div>`;
+
+    if(pmSlots.length > 0){
+      html += `<hr class="kari-divider">
+      <div class="kari-section">
+        <div class="kari-label">午後</div>
+        <div class="kari-slots">${pmSlots.map(s => buildKariSlot(s, ds)).join('')}</div>
+      </div>`;
+    }
+  }
+
+  // 실제 스케줄
+  html += '<div class="sched-section">';
+  dayScheds.slice(0, 4).forEach(s => {
+    html += `<div class="sched-item ${s.status}">${escH(s.truck)} ${escH(s.packer?.split('(')[0] || '')} ${escH(s.time || '')}</div>`;
+  });
+  if(dayScheds.length > 4){
+    html += `<div style="font-size:9px;color:var(--text3);">+${dayScheds.length-4}件</div>`;
+  }
+  html += `<div class="sched-add" onclick="event.stopPropagation();openSchedModal('${ds}',null,true)">＋ 追加</div>`;
+  html += '</div>';
+
+  return html;
+}
+
+function buildKariSlot(slot, ds){
+  const exc = S.kariExceptions.find(e => e.ruleId === slot.ruleId && e.date === ds);
+  let cls = slot.fulfilled ? 'ok' : 'ng';
+  let text = slot.truck.slice(0,2) + slot.hon;
+  let title = `${slot.truck} ${slot.hon}台`;
+  if(exc?.type === 'skip'){ cls = 'skip'; text = slot.truck.slice(0,2) + '-'; }
+  else if(exc?.type === 'change_hon'){ cls = 'changed ok'; text = slot.truck.slice(0,2) + exc.hon; }
+  return `<span class="kari-slot ${cls}" title="${title}" onclick="event.stopPropagation();openExcModal('${slot.ruleId}','${ds}')">${text}</span>`;
+}
+
+function getKariSlots(ds, dow){
+  const date = new Date(ds);
+  const activeRules = S.kariRules.filter(r => r.pol === S.pol && r.active && (
+    (r.rule === 'weekday' && dow >= 1 && dow <= 5) ||
+    (r.rule === 'saturday' && dow === 6) ||
+    (r.rule === 'daily')
+  ));
+
+  if(!activeRules.length) return {slots:[], fulfillment:'all-ok'};
+
+  const dayScheds = S.schedules.filter(s => s.date === ds);
+  const slots = activeRules.map(rule => {
+    const exc = S.kariExceptions.find(e => e.ruleId === rule.id && e.date === ds);
+    if(exc?.type === 'skip') return {ruleId:rule.id, truck:rule.truck, timezone:rule.timezone, hon:rule.hon, fulfilled:true};
+    const hon = exc?.type === 'change_hon' ? exc.hon : rule.hon;
+    const truckScheds = dayScheds.filter(s => s.truck === rule.truck);
+    const fulfilled = truckScheds.length >= hon;
+    return {ruleId:rule.id, truck:rule.truck, timezone:rule.timezone, hon, fulfilled};
+  });
+
+  const unfulfilled = slots.filter(s => !s.fulfilled && !S.kariExceptions.find(e => e.ruleId === s.ruleId && e.date === ds && e.type === 'skip'));
+  let fulfillment = 'all-ok';
+  if(unfulfilled.length > 0 && unfulfilled.length < slots.length) fulfillment = 'partial-ng';
+  else if(unfulfilled.length === slots.length) fulfillment = 'all-ng';
+
+  return {slots, fulfillment};
+}
+
+// ══════════════════════════════════════════
+// SCHEDULE MODAL
+// ══════════════════════════════════════════
+function openSchedModal(ds, dateObj, addMode = false){
+  S.modalDate = ds;
+  S.editingSchedId = null;
+  const d = new Date(ds);
+  const wd = ['日','月','火','水','木','金','土'][d.getDay()];
+  document.getElementById('schedModalDate').textContent = `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${wd}）`;
+  const body = document.getElementById('schedModalBody');
+  const dayScheds = S.schedules.filter(s => s.date === ds);
+
+  let html = '';
+  if(dayScheds.length > 0){
+    html += `<div class="form-section-label">登録済みスケジュール</div>
+    <div class="existing-list">`;
+    dayScheds.forEach(s => {
+      html += `<div class="existing-item ${s.status}">
+        <div class="ei-truck">${escH(s.truck)}</div>
+        <div class="ei-info">${escH(s.packer||'')} ${escH(s.time||'')} ${escH(s.cttype||'')}</div>
+        <span class="ei-status status-${s.status}">${statusLabel(s.status)}</span>
+        <button class="icon-btn" onclick="deleteSchedule('${s.id}')">🗑</button>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  html += `<div class="form-section-label">新規登録</div>
+  <div class="form-row">
+    <div class="form-group">
+      <label class="form-label">ドレー業者 *</label>
+      <select class="form-select" id="fTruck">
+        ${TRUCK_LIST.map(t => `<option value="${t}">${t}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">到着時間</label>
+      <input type="time" class="form-input" id="fTime" value="08:00">
+    </div>
+  </div>
+  <div class="form-group full">
+    <label class="form-label">圧縮場</label>
+    <select class="form-select" id="fPacker">
+      <option value="">-- 選択 --</option>
+      ${PACKER_LIST.map(p => `<option value="${p}">${p}</option>`).join('')}
+    </select>
+  </div>
+  <div class="form-row">
+    <div class="form-group">
+      <label class="form-label">CT種別</label>
+      <select class="form-select" id="fCttype">
+        ${CT_TYPES.map(t => `<option value="${t}">${t}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">本数</label>
+      <input type="number" class="form-input" id="fHon" value="1" min="1" max="20">
+    </div>
+  </div>
+  <div class="form-group full">
+    <label class="form-label">ステータス</label>
+    <div class="status-btns">
+      <div class="status-btn active confirmed" onclick="selStatus(this,'confirmed')">確定</div>
+      <div class="status-btn review" onclick="selStatus(this,'review')">調整中</div>
+      <div class="status-btn pending" onclick="selStatus(this,'pending')">確認待ち</div>
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group">
+      <label class="form-label">BKG No.</label>
+      <input type="text" class="form-input" id="fBkg" placeholder="TYOG...">
+    </div>
+    <div class="form-group">
+      <label class="form-label">CY CUT</label>
+      <input type="date" class="form-input" id="fCycut">
+    </div>
+  </div>
+  <div class="form-group full">
+    <label class="form-label">備考</label>
+    <input type="text" class="form-input" id="fComment" placeholder="特記事項">
+  </div>`;
+
+  body.innerHTML = html;
+  document.getElementById('schedModal').classList.add('open');
+}
+
+function selStatus(el, status){
+  document.querySelectorAll('.status-btn').forEach(b => b.classList.remove('active','confirmed','review','pending'));
+  el.classList.add('active', status);
+  el.dataset.status = status;
+}
+
+function closeSchedModal(){
+  document.getElementById('schedModal').classList.remove('open');
+}
+
+function saveSchedule(){
+  const truck = document.getElementById('fTruck').value;
+  if(!truck){ toast('ドレー業者を選択してください', 'err'); return; }
+  const activeStatus = document.querySelector('.status-btn.active');
+  const status = activeStatus?.dataset.status || 'pending';
+  const sched = {
+    id: 'sc_' + Date.now(),
+    date: S.modalDate,
+    truck,
+    time: document.getElementById('fTime').value,
+    packer: document.getElementById('fPacker').value,
+    cttype: document.getElementById('fCttype').value,
+    hon: parseInt(document.getElementById('fHon').value) || 1,
+    status,
+    bkgno: document.getElementById('fBkg').value,
+    cycut: document.getElementById('fCycut').value,
+    comment: document.getElementById('fComment').value,
+    pol: S.pol,
+    createdby: S.loggedInEmail,
+  };
+  S.schedules.push(sched);
+  saveLocalData();
+  closeSchedModal();
+  render();
+  toast('スケジュールを保存しました', 'ok');
+  // TODO: Dataverse POST leenai_b05_drayschedules
+}
+
+function deleteSchedule(id){
+  if(!confirm('このスケジュールを削除しますか？')) return;
+  S.schedules = S.schedules.filter(s => s.id !== id);
+  saveLocalData();
+  closeSchedModal();
+  render();
+  toast('削除しました', 'ok');
+}
+
+// ══════════════════════════════════════════
+// EXCEPTION MODAL
+// ══════════════════════════════════════════
+function openExcModal(ruleId, ds){
+  S.excRuleId = ruleId;
+  S.excDate = ds;
+  const rule = S.kariRules.find(r => r.id === ruleId);
+  const exc = S.kariExceptions.find(e => e.ruleId === ruleId && e.date === ds);
+  const d = new Date(ds);
+  const wd = ['日','月','火','水','木','金','土'][d.getDay()];
+  document.getElementById('excModalTitle').textContent = `${rule?.truck || ''} 仮押さえ 例外設定`;
+  document.getElementById('excModalDate').textContent = `${d.getMonth()+1}/${d.getDate()}（${wd}）`;
+
+  // 현재 예외 상태 복원
+  S.excType = exc?.type || 'normal';
+  document.querySelectorAll('.exc-option').forEach(el => {
+    el.classList.remove('selected');
+    const t = el.dataset.exctype;
+    if(t === S.excType || (!t && S.excType === 'normal')) el.classList.add('selected');
+  });
+  document.getElementById('excModal').classList.add('open');
+}
+
+function selectExc(el, type){
+  S.excType = type;
+  document.querySelectorAll('.exc-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('excHonInput').classList.toggle('show', type === 'change_hon');
+  document.getElementById('excTimeInput').classList.toggle('show', type === 'change_time');
+}
+
+function closeExcModal(){
+  document.getElementById('excModal').classList.remove('open');
+}
+
+function saveException(){
+  // 기존 예외 제거
+  S.kariExceptions = S.kariExceptions.filter(e => !(e.ruleId === S.excRuleId && e.date === S.excDate));
+  if(S.excType !== 'normal'){
+    const exc = {ruleId: S.excRuleId, date: S.excDate, type: S.excType};
+    if(S.excType === 'change_hon') exc.hon = parseInt(document.getElementById('excHon').value) || 2;
+    if(S.excType === 'change_time') exc.time = document.getElementById('excTime').value;
+    S.kariExceptions.push(exc);
+  }
+  saveLocalData();
+  closeExcModal();
+  render();
+  toast('例外を設定しました', 'ok');
+}
+
+// ══════════════════════════════════════════
+// 仮押さえ PANEL
+// ══════════════════════════════════════════
+function toggleKariPanel(){
+  document.getElementById('kariPanel').classList.toggle('open');
+}
+
+function renderKariPanel(){
+  const body = document.getElementById('kariPanelBody');
+  if(!S.kariRules.length){
+    body.innerHTML = '<div style="text-align:center;color:var(--text3);padding:20px;">規則がありません</div>';
+    return;
+  }
+  body.innerHTML = S.kariRules.map(r => {
+    const ruleLabel = r.rule === 'weekday' ? '平日' : r.rule === 'saturday' ? '土曜' : '毎日';
+    const tzLabel = r.timezone ? ` ${r.timezone}` : '';
+    const color = TRUCK_COLORS[r.truck] || '#888';
+    return `
+    <div class="kari-rule-item">
+      <div class="kari-rule-info">
+        <div class="kari-rule-name" style="color:${color}">${r.truck}</div>
+        <div class="kari-rule-detail">${ruleLabel}${tzLabel} ${r.hon}台${r.timerange ? ' / '+r.timerange : ''}</div>
+      </div>
+      <div class="kari-rule-actions">
+        <button class="icon-btn" onclick="toggleKariActive('${r.id}')" title="${r.active?'無効化':'有効化'}">${r.active?'✅':'⭕'}</button>
+        <button class="icon-btn" onclick="deleteKariRule('${r.id}')" title="削除">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleKariActive(id){
+  const rule = S.kariRules.find(r => r.id === id);
+  if(rule) rule.active = !rule.active;
+  saveLocalData();
+  render();
+}
+
+function deleteKariRule(id){
+  if(!confirm('この規則を削除しますか？')) return;
+  S.kariRules = S.kariRules.filter(r => r.id !== id);
+  saveLocalData();
+  render();
+}
+
+function addKariRule(){
+  // 簡易: 기본 규칙 추가 (실제로는 더 상세한 폼 필요)
+  const truck = prompt('ドレー業者名:');
+  if(!truck) return;
+  const rule = {
+    id: 'kr_' + Date.now(),
+    truck, rule:'weekday', timezone:null, hon:1,
+    timerange:'06:00~08:30', pol:S.pol, active:true
+  };
+  S.kariRules.push(rule);
+  saveLocalData();
+  render();
+  toast('規則を追加しました', 'ok');
+}
+
+// ══════════════════════════════════════════
+// MAIL MODAL (stub)
+// ══════════════════════════════════════════
+function openMailModal(){
+  toast('メール送付機能は近日実装予定です', 'info');
+}
+
+// ══════════════════════════════════════════
+// MONTH NAV
+// ══════════════════════════════════════════
+function changeMonth(dir){
+  S.currentMonth += dir;
+  if(S.currentMonth > 12){ S.currentMonth = 1; S.currentYear++; }
+  if(S.currentMonth < 1){ S.currentMonth = 12; S.currentYear--; }
+  render();
+  if(S.accessToken && Date.now() < S.tokenExpiry) refreshCompass();
+}
+
+// ══════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════
+function getMonthDays(y, m){
+  const first = new Date(y, m-1, 1);
+  const last  = new Date(y, m, 0);
+  const days  = [];
+  let dow = first.getDay();
+  dow = dow === 0 ? 6 : dow - 1; // 월요일=0
+  for(let i = 0; i < dow; i++){
+    const d = new Date(y, m-1, -dow+i+1);
+    days.push({date:d, cur:false});
+  }
+  for(let d = 1; d <= last.getDate(); d++) days.push({date:new Date(y,m-1,d), cur:true});
+  while(days.length % 7 !== 0){
+    const d = days[days.length-1].date;
+    const nd = new Date(d); nd.setDate(d.getDate()+1);
+    days.push({date:nd, cur:false});
+  }
+  return days;
+}
+
+function dateStr(d){
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function escH(v){ return v ? String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
+
+function statusLabel(s){ return s==='confirmed'?'確定':s==='review'?'調整中':'確認待ち'; }
+
+// ══════════════════════════════════════════
+// THEME
+// ══════════════════════════════════════════
+function toggleTheme(){
+  const cur = document.documentElement.getAttribute('data-theme');
+  const next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('leenai_b05_theme', next);
+  document.getElementById('themeBtn').textContent = next === 'dark' ? '☀️ ライト' : '🌙 ダーク';
+}
+
+// ══════════════════════════════════════════
+// LOADING / TOAST
+// ══════════════════════════════════════════
+function showLoading(msg='読み込み中...'){
+  document.getElementById('loadingMsg').textContent = msg;
+  document.getElementById('loadingOverlay').classList.add('show');
+}
+function hideLoading(){ document.getElementById('loadingOverlay').classList.remove('show'); }
+
+function toast(msg, type='ok'){
+  const w = document.getElementById('toastWrap');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  const icon = type==='ok'?'✅':type==='err'?'❌':'ℹ️';
+  t.innerHTML = `<span>${icon}</span>${escH(msg)}`;
+  w.appendChild(t);
+  setTimeout(()=>{ t.style.animation='fadeOut .3s forwards'; setTimeout(()=>t.remove(),300); }, 2800);
+}
+
+// ══════════════════════════════════════════
+// BOOT
+// ══════════════════════════════════════════
 init();
 </script>
 </body>

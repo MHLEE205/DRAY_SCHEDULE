@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v2.7</title>
+<title>LEENAI ドレースケジュール管理 v2.9</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -293,7 +293,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v2.7</div>
+  <div class="header-ver">v2.9</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -1373,11 +1373,22 @@ async function refreshCompass(saveToCache = false){
     const toDate   = `${yStr}-${mStr}-${lastDay}`;
 
     // ── STEP 1: 구매계약 잔량 ──
-    // TKK・KANEKO는 港渡しで登録→後でPlant分割→店頭に変更する運用のため
-    // incotermsは問わずloading_port(POL)のみでフィルター
+    // 店頭渡し → 全Packer対象
+    // 港渡し   → TKK(TOKYO) / 兼子(KANEKO) のみ
+    //   理由: TKK・兼子は港渡しで契約登録→後でPlant分割→店頭に変更する運用
     showLoading('購買契約 取得中...');
     const polFilter = `(cr49f_loading_port eq '東京' or cr49f_loading_port eq '横浜')`;
+    // TKK / KANEKO の Packer GUID (実測確認済)
+    const MINATO_PACKER_GUIDS = [
+      'b9054158-b85b-f011-bec2-000d3a786f70', // 兼子 KANEKO
+      '3a423e5e-b85b-f011-bec2-000d3a786f70', // TKK TOKYO
+    ];
+    const minatoGuidFilter = MINATO_PACKER_GUIDS
+      .map(g => `_cr49f_packer_id_value eq ${g}`)
+      .join(' or ');
+    // 店頭 OR (港 AND TKK/KANEKO)
     const pdFilter = [
+      `(cr49f_incoterms eq '店頭' or (cr49f_incoterms eq '港' and (${minatoGuidFilter})))`,
       polFilter,
       `cr49f_closing eq false`,
     ].join(' and ');
@@ -1514,19 +1525,12 @@ async function refreshCompass(saveToCache = false){
       } catch(_){}
     }));
 
-    // POL 필터: 선택된 항구(TOKYO / YOKOHAMA / TOKYO+YOKOHAMA) 만 남김
-    const selectedPol = S.pol;
-    const polSet = selectedPol === 'TOKYO+YOKOHAMA'
-      ? new Set(['TOKYO','YOKOHAMA'])
-      : new Set([selectedPol]);
-    const ciFiltered = ciRows.filter(r => {
-      const bkgGuid = (r['_crcf9_booking_id_value'] || '').toUpperCase();
-      return polSet.has(bkgPolMap[bkgGuid] || '');
-    });
+    // POL 필터는 rebuildCompassByPol()에서 처리 — ここでは全件保存
+    // (POL 전환 시 API 재호출 없이 즉시 반영하기 위해)
 
-    // Plant 명칭 + Packer 취득
+    // Plant 명칭 + Packer 취득 (ciRows 전체 기준)
     showLoading(`Plant/Packer情報取得中...`);
-    const plantGuids = [...new Set(ciFiltered.map(r => r['_crcf9_parker_plant_id_value']).filter(Boolean))];
+    const plantGuids = [...new Set(ciRows.map(r => r['_crcf9_parker_plant_id_value']).filter(Boolean))];
     const plantMap = {}; // guid → {plant, packerCode}
     await Promise.all(plantGuids.map(async g => {
       try {
@@ -1540,7 +1544,7 @@ async function refreshCompass(saveToCache = false){
 
     // ITEM 명칭 일괄 취득
     showLoading('品目情報取得中...');
-    const ciItemGuids = [...new Set(ciFiltered.map(r => r['_crcf9_item_id_value']).filter(Boolean))];
+    const ciItemGuids = [...new Set(ciRows.map(r => r['_crcf9_item_id_value']).filter(Boolean))];
     const ciItemMap = {}; // guid → {code, ja}
     await Promise.all(ciItemGuids.map(async g => {
       try {
@@ -1549,8 +1553,8 @@ async function refreshCompass(saveToCache = false){
       } catch(_){}
     }));
 
-    // COMPASS 스케줄 데이터 보강 (POL 필터된 ciFiltered 사용)
-    S.compassSchedules = ciFiltered.map(r => {
+    // COMPASS 스케줄 데이터 보강 — 전 POL 전체 저장 (POL필터는 rebuildCompassByPol에서)
+    S.compassSchedules = ciRows.map(r => {
       const drayGuid  = (r['_crcf9_dray_id_value']        || '').toUpperCase();
       const plantGuid = (r['_crcf9_parker_plant_id_value'] || '').toUpperCase();
       const itemGuid  = (r['_crcf9_item_id_value']         || '').toUpperCase();
@@ -1585,7 +1589,7 @@ async function refreshCompass(saveToCache = false){
     });
 
     // 드레이별 집계
-    S.compassTotal = ciFiltered.length;
+    S.compassTotal = ciRows.length; // 전체 — POL별 집계는 rebuildCompassByPol에서
     S.compassByTruck = {};
     S.compassSchedules.forEach(s => {
       if(s.drayShort) S.compassByTruck[s.drayShort] = (S.compassByTruck[s.drayShort] || 0) + 1;

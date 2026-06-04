@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v1.3</title>
+<title>LEENAI ドレースケジュール管理 v1.4</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -235,8 +235,21 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 .toast.info{border-left:3px solid var(--accent);}
 @keyframes slideIn{from{transform:translateX(20px);opacity:0;}to{transform:translateX(0);opacity:1;}}
 
-/* ══ Footer ══ */
-.page-footer{text-align:center;font-size:10px;color:var(--text3);padding:16px;letter-spacing:.4px;border-top:1px solid var(--border);margin-top:8px;}
+/* ══ COMPASS 확정 스케줄 표시 ══ */
+.sched-item.compass{background:rgba(79,142,247,.12);border-left-color:var(--accent);color:var(--text);}
+.sched-item.compass-ng{background:rgba(239,68,68,.12);border-left-color:var(--danger);}
+.sched-item.sched-only{background:rgba(245,158,11,.12);border-left-color:var(--warn);}
+
+/* 대조 배지 */
+.match-badge{font-size:9px;padding:1px 4px;border-radius:3px;font-weight:700;margin-left:3px;}
+.match-ok{background:rgba(34,197,94,.2);color:var(--ok);}
+.match-warn{background:rgba(245,158,11,.2);color:var(--warn);}
+.match-ng{background:rgba(239,68,68,.2);color:var(--danger);}
+
+/* 날짜셀 COMPASS 전용 섹션 */
+.compass-section{padding:3px 5px;border-top:1px solid var(--border);}
+.compass-label{font-size:9px;color:var(--accent);margin-bottom:2px;font-weight:600;display:flex;align-items:center;gap:3px;}
+
 </style>
 </head>
 <body>
@@ -245,7 +258,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v1.3</div>
+  <div class="header-ver">v1.4</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -459,7 +472,9 @@ const S = {
   schedules: [],        // 실제 스케줄
   // COMPASS 집계 (월간)
   compassTotal: 0,
-  compassByTruck: {},     // drayGUID → 확정 본수
+  compassByTruck: {},      // drayShort → 확정 본수
+  compassSchedules: [],    // COMPASS 확정 스케줄 전건 (날짜별 대조용)
+  compassByDate: {},       // 'YYYY-MM-DD' → [schedule...]
   // 구매계약 잔량 (STEP1)
   purchaseDetails: [],    // 취득한 purchase_detail 전건 (나중에 활용)
   purchaseByPacker: {},   // packerName → {total, details[]}
@@ -832,34 +847,100 @@ async function refreshCompass(){
       const item = itemMap[guid];
       d._item_ja = item ? (item.ja || item.code) : '';
     });
-    // ── STEP 2: 확정 본수 (crcf9_container_informations) ──
+    // ── STEP 2: COMPASS 확정 스케줄 취득 (crcf9_container_informations) ──
     showLoading('確定スケジュール取得中...');
     const ciFilter = [
       `crcf9_work_date ge ${fromISO}`,
       `crcf9_work_date le ${toISO}`,
       `crcf9_incoterms eq '店頭渡し'`,
     ].join(' and ');
-    const ciFields = 'crcf9_container_informationid,crcf9_work_date,_crcf9_dray_id_value,crcf9_type,_crcf9_region_japan_id_value';
+    // ⚠️ _crcf9_region_japan_id_value は container_information に存在しないため除外
+    const ciFields = [
+      'crcf9_container_informationid',
+      'crcf9_work_date',
+      'crcf9_work_time',
+      '_crcf9_dray_id_value',
+      'crcf9_type',
+      '_crcf9_parker_plant_id_value',
+      '_crcf9_booking_id_value',
+    ].join(',');
     const ciData = await dvGet(
       `crcf9_container_informations?$filter=${ciFilter}&$select=${ciFields}&$top=2000`
     );
-    // POL フィルタ (TOKYO/YOKOHAMA) — FormattedValue で判定
-    const ciRows = (ciData.value || []);
+    const ciRows = ciData.value || [];
+
+    // Plant 명칭 일괄 취득
+    showLoading(`Plant情報取得中...`);
+    const plantGuids = [...new Set(ciRows.map(r => r['_crcf9_parker_plant_id_value']).filter(Boolean))];
+    const plantMap = {}; // guid → {plant, packerName}
+    await Promise.all(plantGuids.map(async g => {
+      try {
+        const r = await dvGet(`crcf9_packer_plants(${g})?$select=crcf9_plant`);
+        plantMap[g.toUpperCase()] = r.crcf9_plant || '';
+      } catch(_){}
+    }));
+
+    // BKG → booking_detail → ITEM 취득
+    showLoading('品目情報取得中...');
+    const bkgGuids = [...new Set(ciRows.map(r => r['_crcf9_booking_id_value']).filter(Boolean))];
+    const bkgItemMap = {}; // bkgGuid → [itemName...]
+    await Promise.all(bkgGuids.map(async g => {
+      try {
+        const r = await dvGet(
+          `cr49f_booking_details?$filter=_cr49f_booking_id_value eq ${g}&$select=_cr49f_item_id_value&$top=20`
+        );
+        const itemGuids = [...new Set((r.value||[]).map(d => d['_cr49f_item_id_value']).filter(Boolean))];
+        const items = await Promise.all(itemGuids.map(async ig => {
+          try {
+            const ir = await dvGet(`cr49f_items(${ig})?$select=cr49f_item,crcf9_item_japan`);
+            return ir.crcf9_item_japan || ir.cr49f_item || '';
+          } catch(_){ return ''; }
+        }));
+        bkgItemMap[g.toUpperCase()] = items.filter(Boolean);
+      } catch(_){}
+    }));
+
+    // COMPASS 스케줄 데이터 보강
+    S.compassSchedules = ciRows.map(r => {
+      const drayGuid = (r['_crcf9_dray_id_value'] || '').toUpperCase();
+      const dray = DRAY_MASTER_BY_GUID[drayGuid];
+      const plantGuid = (r['_crcf9_parker_plant_id_value'] || '').toUpperCase();
+      const bkgGuid = (r['_crcf9_booking_id_value'] || '').toUpperCase();
+      const dateStr = (r.crcf9_work_date || '').slice(0, 10);
+      return {
+        id:        r.crcf9_container_informationid,
+        date:      dateStr,
+        time:      r.crcf9_work_time || '',
+        drayShort: dray ? dray.short : '',
+        drayGuid,
+        plant:     plantMap[plantGuid] || '',
+        plantGuid,
+        cttype:    r.crcf9_type || '',
+        items:     bkgItemMap[bkgGuid] || [],
+        bkgGuid,
+      };
+    });
+
+    // 날짜별 인덱스
+    S.compassByDate = {};
+    S.compassSchedules.forEach(s => {
+      if(!S.compassByDate[s.date]) S.compassByDate[s.date] = [];
+      S.compassByDate[s.date].push(s);
+    });
+
+    // 드레이별 집계
     S.compassTotal = ciRows.length;
     S.compassByTruck = {};
-    ciRows.forEach(r => {
-      const guid = (r['_crcf9_dray_id_value'] || '').toUpperCase();
-      const dray = DRAY_MASTER_BY_GUID[guid];
-      const key = dray ? dray.short : guid.slice(0,8) || 'other';
-      S.compassByTruck[key] = (S.compassByTruck[key] || 0) + 1;
+    S.compassSchedules.forEach(s => {
+      if(s.drayShort) S.compassByTruck[s.drayShort] = (S.compassByTruck[s.drayShort] || 0) + 1;
     });
 
     // ── STEP 3: 잔량 계산 ──
-    const confirmedTotal = ciRows.length;
-    S.remainTotalHon = Math.max(0, S.purchaseTotalHon - confirmedTotal);
+    S.remainTotalHon = Math.max(0, S.purchaseTotalHon - S.compassTotal);
 
     renderSummary();
-    toast(`COMPASS完了: 購買契約${S.purchaseTotalHon}本 / 確定${confirmedTotal}本 / 残量${S.remainTotalHon}本`, 'ok');
+    render(); // 캘린더도 갱신
+    toast(`COMPASS完了: 購買契約${S.purchaseTotalHon}本 / 確定${S.compassTotal}本 / 残量${S.remainTotalHon}本`, 'ok');
   } catch(e){
     toast('COMPASS取得エラー: ' + e.message.slice(0,60), 'err');
     console.error(e);
@@ -1031,45 +1112,81 @@ function renderCalendar(){
 }
 
 function buildCellHTML(date, ds, slots, dayScheds, fulfillment){
-  // Header
   const badgeMap = {'all-ok':'badge-ok 充足','partial-ng':'badge-partial 一部未充','all-ng':'badge-ng 未充足'};
   const [badgeCls, badgeText] = (badgeMap[fulfillment] || 'badge-ok 充足').split(' ');
   const hasBadge = fulfillment !== 'all-ok' || slots.length > 0;
   const badge = hasBadge ? `<span class="cell-badge ${badgeCls}">${badgeText}</span>` : '';
 
+  // COMPASS 확정 데이터
+  const compassDay = S.compassByDate[ds] || [];
+
+  // ── 대조 로직 ──
+  // ❗ COMPASS에 있는데 스케줄표에 없는 것
+  const compassOnly = compassDay.filter(c => {
+    return !dayScheds.some(s =>
+      s.truck === c.drayShort &&
+      (s.packer || '').includes(c.plant?.split('(')[0] || '??')
+    );
+  });
+  // 🟡 스케줄표에 있는데 COMPASS에 없는 것
+  const schedOnly = dayScheds.filter(s => {
+    return !compassDay.some(c => s.truck === c.drayShort);
+  });
+
+  // 셀 헤더 — 누락 배지 강조
+  const hasAlert = compassOnly.length > 0;
+  const alertBadge = hasAlert
+    ? `<span class="cell-badge" style="background:var(--danger);color:#fff;">❗${compassOnly.length}</span>`
+    : '';
+
   let html = `
     <div class="cell-header">
       <span class="cell-date">${date.getDate()}</span>
-      ${badge}
+      <span style="display:flex;gap:2px;">${badge}${alertBadge}</span>
     </div>
   `;
 
-  // 仮押さえ (午前/午後)
+  // 仮押さえ
   const amSlots = slots.filter(s => s.timezone === '午前' || s.timezone === null);
   const pmSlots = slots.filter(s => s.timezone === '午後');
-
   if(slots.length > 0){
-    html += `<div class="kari-section">
-      <div class="kari-label">午前</div>
-      <div class="kari-slots">${amSlots.map(s => buildKariSlot(s, ds)).join('')}</div>
-    </div>`;
-
+    html += `<div class="kari-section"><div class="kari-label">午前</div><div class="kari-slots">${amSlots.map(s => buildKariSlot(s, ds)).join('')}</div></div>`;
     if(pmSlots.length > 0){
-      html += `<hr class="kari-divider">
-      <div class="kari-section">
-        <div class="kari-label">午後</div>
-        <div class="kari-slots">${pmSlots.map(s => buildKariSlot(s, ds)).join('')}</div>
-      </div>`;
+      html += `<hr class="kari-divider"><div class="kari-section"><div class="kari-label">午後</div><div class="kari-slots">${pmSlots.map(s => buildKariSlot(s, ds)).join('')}</div></div>`;
     }
   }
 
-  // 실제 스케줄
+  // COMPASS 확정 스케줄 섹션
+  if(compassDay.length > 0){
+    html += `<div class="compass-section">
+      <div class="compass-label">🔵 COMPASS確定</div>`;
+    compassDay.forEach(c => {
+      const timeStr = c.time ? c.time.slice(0,5) : '';
+      const itemStr = c.items.length ? c.items[0] : '';
+      const plantShort = c.plant?.replace('（','(').replace('）',')')?.split('(')[1]?.replace(')','') || c.plant || '';
+      // 스케줄표와 대조
+      const matched = dayScheds.some(s => s.truck === c.drayShort);
+      const cls = matched ? 'compass' : 'compass-ng';
+      const matchBadge = matched
+        ? `<span class="match-badge match-ok">✓</span>`
+        : `<span class="match-badge match-ng">未登録</span>`;
+      html += `<div class="sched-item ${cls}">${escH(c.drayShort)} ${escH(plantShort)} ${escH(timeStr)}${escH(itemStr?` [${itemStr}]`:'')}${matchBadge}</div>`;
+    });
+    html += `</div>`;
+  }
+
+  // 스케줄표 섹션
   html += '<div class="sched-section">';
-  dayScheds.slice(0, 4).forEach(s => {
-    html += `<div class="sched-item ${s.status}">${escH(s.truck)} ${escH(s.packer?.split('(')[0] || '')} ${escH(s.time || '')}</div>`;
-  });
-  if(dayScheds.length > 4){
-    html += `<div style="font-size:9px;color:var(--text3);">+${dayScheds.length-4}件</div>`;
+  if(dayScheds.length > 0){
+    dayScheds.slice(0, 3).forEach(s => {
+      const compassMatched = compassDay.some(c => s.truck === c.drayShort);
+      const cls = compassMatched ? 'confirmed' : 'sched-only';
+      const badge2 = !compassMatched
+        ? `<span class="match-badge match-warn">COMPASS未</span>`
+        : '';
+      html += `<div class="sched-item ${cls}">${escH(s.truck)} ${escH(s.packer?.split('(')[0]||'')} ${escH(s.time||'')}${badge2}</div>`;
+    });
+    if(dayScheds.length > 3) html += `<div style="font-size:9px;color:var(--text3);">+${dayScheds.length-3}件</div>`;
   }
   html += `<div class="sched-add" onclick="event.stopPropagation();openSchedModal('${ds}',null,true)">＋ 追加</div>`;
   html += '</div>';

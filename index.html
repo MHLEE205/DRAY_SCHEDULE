@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v2.0</title>
+<title>LEENAI ドレースケジュール管理 v2.1</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -250,6 +250,40 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 .compass-section{padding:3px 5px;border-top:1px solid var(--border);}
 .compass-label{font-size:9px;color:var(--accent);margin-bottom:2px;font-weight:600;display:flex;align-items:center;gap:3px;}
 
+/* ══ 탭 바 ══ */
+.tab-bar{background:var(--surface);border-bottom:2px solid var(--border);display:flex;gap:0;padding:0 20px;}
+.tab-btn{padding:10px 20px;font-size:12px;font-weight:700;color:var(--text2);border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;font-family:inherit;}
+.tab-btn:hover{color:var(--text);}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
+.tab-badge{font-size:10px;background:var(--accent);color:#fff;padding:1px 6px;border-radius:8px;margin-left:5px;}
+.tab-panel{display:none;}
+.tab-panel.active{display:flex;flex:1;}
+
+/* B-03-C 검색 패널 */
+.sc-wrap{flex:1;overflow-y:auto;padding:16px 20px;}
+.sc-search-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;margin-bottom:16px;}
+.sc-search-title{font-size:12px;font-weight:700;color:var(--accent);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.sc-search-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.sc-label{font-size:11px;color:var(--text2);font-weight:600;white-space:nowrap;}
+.sc-input{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:8px;font-size:12px;font-family:inherit;}
+.sc-select{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;}
+.sc-alert{background:rgba(245,158,11,.1);border:1px solid var(--warn);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--warn);margin-top:10px;}
+.sc-company-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden;}
+.sc-company-header{padding:10px 16px;display:flex;align-items:center;gap:10px;cursor:pointer;background:var(--surface2);}
+.sc-company-header:hover{background:var(--surface3);}
+.sc-company-name{font-size:13px;font-weight:700;flex:1;}
+.sc-company-count{font-size:12px;color:var(--accent);font-weight:700;}
+.sc-chevron{font-size:11px;color:var(--text3);transition:transform .2s;}
+.sc-chevron.open{transform:rotate(90deg);}
+.sc-company-body{display:none;}
+.sc-company-body.open{display:block;}
+.sc-table{width:100%;border-collapse:collapse;font-size:11px;}
+.sc-table th{background:var(--surface3);padding:6px 10px;text-align:left;color:var(--text3);font-weight:700;border-bottom:1px solid var(--border);}
+.sc-table td{padding:6px 10px;border-bottom:1px solid var(--border);color:var(--text2);}
+.sc-table tr:last-child td{border-bottom:none;}
+.sc-table tr:hover td{background:var(--surface2);}
+.sc-total-row td{font-weight:700;color:var(--accent);background:var(--surface2);}
+
 </style>
 </head>
 <body>
@@ -258,7 +292,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v2.0</div>
+  <div class="header-ver">v2.1</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -284,6 +318,23 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
     <option value="池谷">池谷</option>
     <option value="IT">IT</option>
     <option value="国際">国際</option>
+    <option value="山勝">山勝</option>
+    <option value="日正">日正</option>
+    <option value="今井">今井</option>
+    <option value="IS">IS</option>
+    <option value="EA">EA</option>
+  </select>
+  <select class="dray-select" id="packerFilter" onchange="render()">
+    <option value="">全Packer</option>
+    <option value="兼">兼子</option>
+    <option value="東">東(TKK)</option>
+    <option value="群馬">群馬</option>
+    <option value="TPC">TPC</option>
+    <option value="川鈴">川鈴</option>
+    <option value="共益">共益</option>
+    <option value="丸康">丸康</option>
+    <option value="ウブ">ウブカタ</option>
+    <option value="富士">富士</option>
   </select>
   <div class="ctrl-sep"></div>
   <button class="btn btn-ghost btn-sm" id="refreshBtn" onclick="refreshCompass()">🔄 COMPASS</button>
@@ -302,47 +353,90 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 </div>
 
 <!-- ══ Main App ══ -->
-<div id="mainApp" style="display:none;">
+<div id="mainApp" style="display:none;flex-direction:column;height:calc(100vh - 50px);">
 
-  <!-- 확정 상황 바 -->
-  <div class="confirm-bar" id="confirmBar">
-    <span class="confirm-title">確定状況</span>
-    <span style="font-size:12px;color:var(--text2);">店頭渡し <b id="totalHon" style="color:var(--accent);">—</b>本</span>
-    <div id="truckBars" style="display:flex;gap:14px;flex:1;flex-wrap:wrap;"></div>
+  <!-- 탭 바 -->
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('calendar')">📅 スケジュール</button>
+    <button class="tab-btn" onclick="switchTab('sccheck')">🔍 スケジュール確認 <span class="tab-badge">B-03-C</span></button>
   </div>
 
-  <!-- 2컬럼 레이아웃 -->
-  <div class="app-layout">
+  <!-- 탭 패널: 캘린더 -->
+  <div id="tab-calendar" class="tab-panel active" style="flex-direction:column;flex:1;overflow:hidden;">
 
-    <!-- 좌: 캘린더 -->
-    <div class="calendar-col">
-      <div class="calendar-wrap">
-        <div class="cal-header">
-          <div class="cal-dow">月</div><div class="cal-dow">火</div><div class="cal-dow">水</div>
-          <div class="cal-dow">木</div><div class="cal-dow">金</div>
-          <div class="cal-dow sat">土</div><div class="cal-dow sun">日</div>
+    <!-- 확정 상황 바 -->
+    <div class="confirm-bar" id="confirmBar">
+      <span class="confirm-title">確定状況</span>
+      <span style="font-size:12px;color:var(--text2);">店頭渡し <b id="totalHon" style="color:var(--accent);">—</b>本</span>
+      <div id="truckBars" style="display:flex;gap:14px;flex:1;flex-wrap:wrap;"></div>
+    </div>
+
+    <!-- 2컬럼 레이아웃 -->
+    <div class="app-layout">
+      <div class="calendar-col">
+        <div class="calendar-wrap">
+          <div class="cal-header">
+            <div class="cal-dow">月</div><div class="cal-dow">火</div><div class="cal-dow">水</div>
+            <div class="cal-dow">木</div><div class="cal-dow">金</div>
+            <div class="cal-dow sat">土</div><div class="cal-dow sun">日</div>
+          </div>
+          <div class="cal-grid" id="calGrid"></div>
         </div>
-        <div class="cal-grid" id="calGrid"></div>
+      </div>
+      <div class="purchase-col">
+        <div class="purchase-header">
+          <div class="purchase-header-title">📦 購買契約 残量</div>
+          <div class="purchase-summary-row">
+            <span class="ps-badge total">契約 <span id="totalPurchase">—</span>本</span>
+            <span style="color:var(--text3);">|</span>
+            <span class="ps-badge confirmed">確定 <span id="totalConfirmed">—</span>本</span>
+            <span style="color:var(--text3);">|</span>
+            <span class="ps-badge remain">残量 <span id="totalRemain">—</span>本</span>
+          </div>
+        </div>
+        <div class="purchase-body" id="purchaseBody">
+          <div style="text-align:center;color:var(--text3);padding:20px;font-size:12px;">COMPASSログイン後に表示</div>
+        </div>
       </div>
     </div>
 
-    <!-- 우: 구매현황 패널 -->
-    <div class="purchase-col">
-      <div class="purchase-header">
-        <div class="purchase-header-title">📦 購買契約 残量</div>
-        <div class="purchase-summary-row">
-          <span class="ps-badge total">契約 <span id="totalPurchase">—</span>本</span>
-          <span style="color:var(--text3);">|</span>
-          <span class="ps-badge confirmed">確定 <span id="totalConfirmed">—</span>本</span>
-          <span style="color:var(--text3);">|</span>
-          <span class="ps-badge remain">残量 <span id="totalRemain">—</span>本</span>
-        </div>
-      </div>
-      <div class="purchase-body" id="purchaseBody">
-        <div style="text-align:center;color:var(--text3);padding:20px;font-size:12px;">COMPASSログイン後に表示</div>
-      </div>
-    </div>
+  </div>
 
+  <!-- 탭 패널: B-03-C スケジュール確認 -->
+  <div id="tab-sccheck" class="tab-panel" style="flex:1;overflow:hidden;">
+    <div class="sc-wrap">
+
+      <!-- 검색 조건 -->
+      <div class="sc-search-panel">
+        <div class="sc-search-title">
+          <span style="background:var(--accent);color:#fff;padding:2px 8px;border-radius:5px;font-size:11px;">B-03-C</span>
+          スケジュール確認 — 検索条件
+        </div>
+        <div class="sc-search-row">
+          <span class="sc-label">作業日 From</span>
+          <input type="date" class="sc-input" id="scFrom">
+          <span class="sc-label">To (最大45日)</span>
+          <input type="date" class="sc-input" id="scTo">
+          <span class="sc-label">渡し条件</span>
+          <select class="sc-select" id="scInco">
+            <option value="">全て</option>
+            <option value="店頭" selected>店頭渡し</option>
+            <option value="港">港渡し</option>
+          </select>
+          <span class="sc-label">表示単位</span>
+          <select class="sc-select" id="scView">
+            <option value="packer">Packer別</option>
+            <option value="dray">ドレー別</option>
+          </select>
+          <button class="btn btn-primary btn-sm" onclick="doScSearch()">🔍 検索</button>
+        </div>
+        <div id="scAlert" style="display:none;" class="sc-alert"></div>
+      </div>
+
+      <!-- 검색 결과 -->
+      <div id="scResultWrap"></div>
+
+    </div>
   </div>
 
   <div class="page-footer">✦ Powered by LEENAI Automation System</div>
@@ -466,6 +560,8 @@ const S = {
   currentYear: new Date().getFullYear(),
   currentMonth: new Date().getMonth() + 1,
   pol: 'TOKYO',
+  drayFilter:   '',   // 드레이 필터
+  packerFilter: '',   // Packer 필터
   // B-05 데이터 (Dataverse 연결 전 mock)
   kariRules: [],        // 仮押さえ 규칙
   kariExceptions: [],   // 날짜별 예외
@@ -801,9 +897,211 @@ async function onLoggedIn(){
 
 function showApp(){
   document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('mainApp').style.display = 'block';
+  const app = document.getElementById('mainApp');
+  app.style.display = 'flex';
   document.getElementById('ctrlBar').style.display = 'flex';
+  // 오늘 날짜로 B-03-C 기간 초기화
+  const today = new Date();
+  const ymd = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  const from = new Date(today); from.setDate(1);
+  document.getElementById('scFrom').value = ymd(from);
+  document.getElementById('scTo').value   = ymd(today);
   render();
+}
+
+// ══════════════════════════════════════════
+// 탭 전환
+// ══════════════════════════════════════════
+function switchTab(tab){
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('tab-'+tab).classList.add('active');
+}
+
+// ══════════════════════════════════════════
+// B-03-C スケジュール確認
+// ══════════════════════════════════════════
+async function doScSearch(){
+  const from  = document.getElementById('scFrom').value;
+  const to    = document.getElementById('scTo').value;
+  const inco  = document.getElementById('scInco').value;
+  const view  = document.getElementById('scView').value;
+  const alert = document.getElementById('scAlert');
+
+  if(!from || !to){ showScAlert('期間を入力してください'); return; }
+  const diffDays = (new Date(to) - new Date(from)) / 86400000;
+  if(diffDays < 0){ showScAlert('終了日は開始日より後にしてください'); return; }
+  if(diffDays > 45){ showScAlert('期間は最大45日です'); return; }
+  if(!S.accessToken || Date.now() > S.tokenExpiry){ showScAlert('COMPASSログインが必要です'); return; }
+
+  alert.style.display = 'none';
+  document.getElementById('scResultWrap').innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3);">取得中...</div>';
+
+  try {
+    showLoading('スケジュール取得中...');
+    const fromDt = from + 'T00:00:00Z';
+    const toDt   = to   + 'T23:59:59Z';
+    let filter = `crcf9_work_date ge ${fromDt} and crcf9_work_date le ${toDt}`;
+    if(inco) filter += ` and crcf9_incoterms eq '${inco}'`;
+
+    const fields = [
+      'crcf9_container_informationid','crcf9_work_date','crcf9_work_time',
+      'crcf9_incoterms','crcf9_type',
+      '_crcf9_dray_id_value','_crcf9_parker_plant_id_value',
+      '_crcf9_item_id_value','_crcf9_booking_id_value'
+    ].join(',');
+
+    const res = await dvGet(`crcf9_container_informations?$filter=${filter}&$select=${fields}&$top=2000`);
+    let rows = res.value || [];
+
+    // Plant/Packer 취득
+    showLoading(`Plant情報取得中... (${rows.length}件)`);
+    const pGuids = [...new Set(rows.map(r=>r['_crcf9_parker_plant_id_value']).filter(Boolean))];
+    const pMap = {};
+    await Promise.all(pGuids.map(async g=>{
+      try{ const r=await dvGet(`crcf9_packer_plants(${g})?$select=crcf9_plant,crcf9_packer_id`);
+           pMap[g.toUpperCase()]={plant:r.crcf9_plant||'',packerCode:r.crcf9_packer_id||''}; }catch(_){}
+    }));
+
+    // ITEM 취득
+    const iGuids = [...new Set(rows.map(r=>r['_crcf9_item_id_value']).filter(Boolean))];
+    const iMap = {};
+    await Promise.all(iGuids.map(async g=>{
+      try{ const r=await dvGet(`cr49f_items(${g})?$select=cr49f_item,crcf9_item_japan`);
+           iMap[g.toUpperCase()]={code:r.cr49f_item||'',ja:r.crcf9_item_japan||''}; }catch(_){}
+    }));
+
+    // 데이터 보강
+    rows = rows.map(r=>{
+      const dg=(r['_crcf9_dray_id_value']||'').toUpperCase();
+      const pg=(r['_crcf9_parker_plant_id_value']||'').toUpperCase();
+      const ig=(r['_crcf9_item_id_value']||'').toUpperCase();
+      const dray=DRAY_MASTER_BY_GUID[dg];
+      const pi=pMap[pg]||{};
+      const ii=iMap[ig]||{};
+      return {
+        date:(r.crcf9_work_date||'').slice(0,10),
+        time:r.crcf9_work_time||'',
+        inco:r.crcf9_incoterms||'',
+        cttype:r.crcf9_type||'',
+        drayShort:dray?dray.short:'',
+        drayName:dray?dray.name:'(不明)',
+        plant:pi.plant||'',
+        packerCode:pi.packerCode||'',
+        itemShort:getItemShort(ii.code,ii.ja),
+        itemCode:ii.code||'',
+      };
+    });
+
+    renderScResult(rows, view);
+  } catch(e){
+    showScAlert('エラー: '+e.message.slice(0,60));
+  } finally { hideLoading(); }
+}
+
+function showScAlert(msg){
+  const el = document.getElementById('scAlert');
+  el.textContent = '⚠️ ' + msg;
+  el.style.display = 'block';
+}
+
+function renderScResult(rows, view){
+  const wrap = document.getElementById('scResultWrap');
+  if(!rows.length){ wrap.innerHTML='<div style="text-align:center;padding:20px;color:var(--text3);">該当データがありません</div>'; return; }
+
+  // グループ化
+  const groups = {};
+  rows.forEach(r=>{
+    const key = view==='dray'
+      ? (r.drayShort || r.drayName || '(不明)')
+      : (getPackerShort(r.packerCode) ? `${getPackerShort(r.packerCode)} — ${r.plant||'(不明)'}` : r.plant||'(不明)');
+    if(!groups[key]) groups[key]=[];
+    groups[key].push(r);
+  });
+
+  // 표시
+  let html = `<div style="font-size:11px;color:var(--text3);margin-bottom:8px;">検索結果: ${rows.length}件 / ${Object.keys(groups).length}${view==='dray'?'ドレー':'Packer'}`;
+  html += `&nbsp;<button class="btn btn-ghost btn-sm" onclick="exportScCsv()">📥 CSV</button></div>`;
+
+  Object.entries(groups).sort((a,b)=>b[1].length-a[1].length).forEach(([grpName, grpRows], idx)=>{
+    const sorted = [...grpRows].sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:(a.time<b.time?-1:1));
+    const id = 'scg_'+idx;
+
+    // 헤더
+    const colHeaders = view==='dray'
+      ? '<th>作業日</th><th>時刻</th><th>Packer / Plant</th><th>ITEM</th><th>CT種別</th><th>渡し</th>'
+      : '<th>作業日</th><th>時刻</th><th>ドレー</th><th>ITEM</th><th>CT種別</th><th>渡し</th>';
+
+    // 행
+    let prevDate = '';
+    const trs = sorted.map(r=>{
+      const rowStyle = r.date!==prevDate && prevDate ? ' style="border-top:2px solid var(--border);"' : '';
+      prevDate = r.date;
+      const col2 = view==='dray'
+        ? `${escH(getPackerShort(r.packerCode)||r.packerCode)} ${escH(r.plant)}`
+        : escH(r.drayShort||r.drayName);
+      return `<tr${rowStyle}>
+        <td>${r.date}</td>
+        <td>${r.time||'—'}</td>
+        <td>${col2}</td>
+        <td>${escH(r.itemShort||r.itemCode||'—')}</td>
+        <td>${escH(r.cttype)}</td>
+        <td>${escH(r.inco)}</td>
+      </tr>`;
+    }).join('');
+
+    html += `<div class="sc-company-card">
+      <div class="sc-company-header" onclick="toggleScGroup('${id}')">
+        <div class="sc-company-name">${escH(grpName)}</div>
+        <div class="sc-company-count">${grpRows.length}本</div>
+        <div class="sc-chevron open" id="${id}_chev">›</div>
+      </div>
+      <div class="sc-company-body open" id="${id}">
+        <table class="sc-table">
+          <thead><tr>${colHeaders}</tr></thead>
+          <tbody>${trs}</tbody>
+          <tfoot><tr class="sc-total-row">
+            <td colspan="5">合計</td><td>${grpRows.length}本</td>
+          </tr></tfoot>
+        </table>
+      </div>
+    </div>`;
+  });
+
+  // CSV 데이터 보관
+  window._scRows = rows;
+  window._scView = view;
+  wrap.innerHTML = html;
+}
+
+function toggleScGroup(id){
+  const body=document.getElementById(id);
+  const chev=document.getElementById(id+'_chev');
+  body.classList.toggle('open');
+  chev.classList.toggle('open');
+}
+
+function exportScCsv(){
+  if(!window._scRows?.length) return;
+  const view = window._scView;
+  const headers = view==='dray'
+    ? ['作業日','時刻','Packer','Plant','ITEM','CT種別','渡し条件','ドレー']
+    : ['作業日','時刻','Packer','Plant','ITEM','CT種別','渡し条件','ドレー'];
+  const lines = [headers.join(',')];
+  window._scRows.forEach(r=>{
+    lines.push([
+      r.date, r.time||'',
+      getPackerShort(r.packerCode)||r.packerCode, r.plant,
+      r.itemShort||r.itemCode, r.cttype, r.inco,
+      r.drayShort||r.drayName
+    ].map(v=>`"${(v||'').replace(/"/g,'""')}"`).join(','));
+  });
+  const bom = '\uFEFF';
+  const blob = new Blob([bom+lines.join('\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=`DRAY_SCHEDULE_${document.getElementById('scFrom').value}_${document.getElementById('scTo').value}.csv`;
+  a.click();
 }
 
 // ══════════════════════════════════════════
@@ -947,16 +1245,21 @@ const PLANT_SHORT_TKK = {
 
 // ITEM 코드 → 약칭 (엑셀표 기반)
 const ITEM_CODE_SHORT = {
-  'JOCC':'C',  'JOMX':'M',  'JOOP':'S',  'JONP':'N',
+  // ITEM 코드 (cr49f_item 필드) → 엑셀 약칭
+  'JOCC':'C',  'JOMG':'M',  'JOOP':'S',  'JONP':'N',
   'JOCP':'B',  'JOMP':'雑', 'JOWP':'W',  'JOSP':'上白',
   'JOPP':'P',  'JOPS':'PP', 'JOPE':'PE', 'JOPX':'PX',
   'JOAL':'AL', 'JOST':'ST', 'JOSS':'SUS','JOCU':'Cu',
-  'JOCP2':'K',
-  // ITEM코드 → 엑셀약칭 매핑 (crcf9_item_japan 기반)
-  'OCC':'C',        'OMG':'M',    'ONP':'N',    'SOP':'S',
-  'BBC':'B',        'SHREDDER':'シ','OINP':'残紙',
-  'e段':'E',        'KGB':'KG',   'PPG':'P',
+  'JOCP2':'K', 'JOMX':'M',
+  // crcf9_item_japan (일본어명) → 엑셀 약칭
+  '段ボール':'C', '雑誌':'M',  'ONP':'N',   'SOP':'S',
+  'BBC':'B',      'OCC':'C',   'OMG':'M',
+  'SHREDDER':'シ','OINP':'残紙',
+  'e段':'E',      'KGB-B':'KG','KGB':'KG',  'PPG':'P',
   '牛乳パック':'牛乳', '紙管':'紙管', '間紙':'間紙',
+  // 풀네임 → 약칭
+  'Old Corrugated Containers':'C',
+  'Magazines':'M',
 };
 
 // CT種別 정식명 → 약칭
@@ -1003,11 +1306,17 @@ function getPackerShort(packerName){
 // ITEM코드/이름 → 엑셀 약칭
 function getItemShort(itemCode, itemJa){
   if(!itemCode && !itemJa) return '';
-  const src = itemCode || itemJa;
-  if(ITEM_CODE_SHORT[src]) return ITEM_CODE_SHORT[src];
+  // 1. ITEM 코드로 직접 매핑
+  if(itemCode && ITEM_CODE_SHORT[itemCode]) return ITEM_CODE_SHORT[itemCode];
+  // 2. 일본어명으로 매핑
   if(itemJa && ITEM_CODE_SHORT[itemJa]) return ITEM_CODE_SHORT[itemJa];
-  // 불명 → ITEM코드 그대로
-  return itemCode || itemJa;
+  // 3. WASTE PAPER 접두사 제거 후 재시도
+  if(itemJa){
+    const cleaned = itemJa.replace(/^WASTE PAPER\s*/i,'').replace(/^WASTE\s*/i,'').trim();
+    if(ITEM_CODE_SHORT[cleaned]) return ITEM_CODE_SHORT[cleaned];
+  }
+  // 4. 불명 → ITEM코드 그대로
+  return itemCode || itemJa || '';
 }
 
 // CT種別 → 약칭
@@ -1299,6 +1608,8 @@ async function refreshCompass(saveToCache = false){
 // ══════════════════════════════════════════
 function render(){
   S.pol = document.getElementById('polSelect').value;
+  S.drayFilter   = document.getElementById('drayFilter')?.value   || '';
+  S.packerFilter = document.getElementById('packerFilter')?.value || '';
   const ml = `${S.currentYear}年${S.currentMonth}月`;
   document.getElementById('monthLabel').textContent = ml;
   renderSummary();
@@ -1440,10 +1751,23 @@ function renderCalendar(){
       const {slots, fulfillment} = getKariSlots(ds, dow);
       cell.classList.add(fulfillment);
 
-      // 実際スケジュール
-      const dayScheds = S.schedules.filter(s => s.date === ds);
+      // 스케줄 필터 적용
+      let dayScheds = S.schedules.filter(s => s.date === ds);
+      let compassDay = S.compassByDate[ds] || [];
 
-      cell.innerHTML = buildCellHTML(date, ds, slots, dayScheds, fulfillment);
+      // ドレー 필터
+      if(S.drayFilter){
+        dayScheds  = dayScheds.filter(s => s.truck === S.drayFilter);
+        compassDay = compassDay.filter(c => c.drayShort === S.drayFilter);
+      }
+      // Packer 필터
+      if(S.packerFilter){
+        dayScheds  = dayScheds.filter(s => getPackerShort(s.packer||'') === S.packerFilter);
+        compassDay = compassDay.filter(c => getPackerShort(c.packerCode||'') === S.packerFilter
+                                        || (c.packerCode||'').toUpperCase().startsWith(S.packerFilter.toUpperCase()));
+      }
+
+      cell.innerHTML = buildCellHTML(date, ds, slots, dayScheds, fulfillment, compassDay);
     } else {
       cell.innerHTML = `<div class="cell-header"><span class="cell-date" style="color:var(--text3)">${date.getDate()}</span></div>`;
     }
@@ -1458,14 +1782,12 @@ function renderCalendar(){
   });
 }
 
-function buildCellHTML(date, ds, slots, dayScheds, fulfillment){
+function buildCellHTML(date, ds, slots, dayScheds, fulfillment, compassDay){
+  compassDay = compassDay || S.compassByDate[ds] || [];
   const badgeMap = {'all-ok':'badge-ok 充足','partial-ng':'badge-partial 一部未充','all-ng':'badge-ng 未充足'};
   const [badgeCls, badgeText] = (badgeMap[fulfillment] || 'badge-ok 充足').split(' ');
   const hasBadge = fulfillment !== 'all-ok' || slots.length > 0;
   const badge = hasBadge ? `<span class="cell-badge ${badgeCls}">${badgeText}</span>` : '';
-
-  // COMPASS 확정 데이터
-  const compassDay = S.compassByDate[ds] || [];
 
   // ── 대조 로직 ──
   // ❗ COMPASS에 있는데 스케줄표에 없는 것
@@ -1649,7 +1971,7 @@ function openSchedModal(ds, dateObj, addMode = false){
     <div class="form-group">
       <label class="form-label">CT種別</label>
       <select class="form-select" id="fCttype">
-        ${CT_TYPES.map(t => `<option value="${t}">${t}</option>`).join('')}
+        ${CT_TYPES.map(t => `<option value="${t}"${t==='40ft'?' selected':''}>${t}</option>`).join('')}
       </select>
     </div>
     <div class="form-group">

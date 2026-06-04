@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v2.1</title>
+<title>LEENAI ドレースケジュール管理 v2.2</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -93,7 +93,8 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 /* 상단 확정 상황 바 (헤더 아래) */
 .confirm-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:8px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
 .confirm-title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;}
-.truck-chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;}
+.truck-chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;background:var(--surface2);padding:3px 10px;border-radius:12px;border:1px solid var(--border);transition:all .15s;cursor:pointer;}
+.truck-chip.active{border-color:var(--accent);background:rgba(79,142,247,.12);}
 
 
 /* ══ Calendar ══ */
@@ -119,7 +120,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 /* Cell Header */
 .cell-header{padding:4px 6px;display:flex;justify-content:space-between;align-items:center;background:var(--surface2);border-bottom:1px solid var(--border);}
 .cell-date{font-size:12px;font-weight:700;}
-.cell-badge{font-size:9px;padding:1px 5px;border-radius:8px;font-weight:700;}
+.cell-badge{font-size:10px;padding:1px 5px;border-radius:8px;font-weight:700;}
 .badge-ok{background:rgba(34,197,94,.2);color:var(--ok);}
 .badge-partial{background:rgba(245,158,11,.2);color:var(--warn);}
 .badge-ng{background:rgba(245,158,11,.9);color:#000;}
@@ -128,7 +129,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 .kari-section{padding:3px 5px;}
 .kari-label{font-size:9px;color:var(--text3);margin-bottom:2px;font-weight:600;}
 .kari-slots{display:flex;gap:2px;flex-wrap:wrap;}
-.kari-slot{font-size:9px;padding:1px 5px;border-radius:4px;font-weight:700;border:1px solid;}
+.kari-slot{font-size:10px;padding:1px 5px;border-radius:4px;font-weight:700;border:1px solid;}
 .kari-slot.ok{background:var(--surface3);border-color:var(--border);color:var(--text2);}
 .kari-slot.ng{background:rgba(245,158,11,.15);border:1px dashed var(--warn);color:var(--warn);}
 .kari-slot.skip{text-decoration:line-through;opacity:.5;}
@@ -139,7 +140,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 
 /* 실제 스케줄 섹션 */
 .sched-section{padding:3px 5px;flex:1;border-top:1px solid var(--border);}
-.sched-item{font-size:10px;padding:2px 5px;border-radius:3px;margin-bottom:2px;border-left:2px solid;}
+.sched-item{font-size:11px;padding:2px 5px;border-radius:3px;margin-bottom:2px;border-left:2px solid;}
 .sched-item.confirmed{background:rgba(34,197,94,.1);border-left-color:var(--ok);}
 .sched-item.review{background:rgba(245,158,11,.1);border-left-color:var(--warn);}
 .sched-item.pending{background:rgba(239,68,68,.1);border-left-color:var(--danger);}
@@ -241,14 +242,14 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 .sched-item.sched-only{background:rgba(245,158,11,.12);border-left-color:var(--warn);}
 
 /* 대조 배지 */
-.match-badge{font-size:9px;padding:1px 4px;border-radius:3px;font-weight:700;margin-left:3px;}
+.match-badge{font-size:11px;padding:1px 4px;border-radius:3px;font-weight:700;margin-left:3px;}
 .match-ok{background:rgba(34,197,94,.2);color:var(--ok);}
 .match-warn{background:rgba(245,158,11,.2);color:var(--warn);}
 .match-ng{background:rgba(239,68,68,.2);color:var(--danger);}
 
 /* 날짜셀 COMPASS 전용 섹션 */
 .compass-section{padding:3px 5px;border-top:1px solid var(--border);}
-.compass-label{font-size:9px;color:var(--accent);margin-bottom:2px;font-weight:600;display:flex;align-items:center;gap:3px;}
+.compass-label{font-size:10px;color:var(--accent);margin-bottom:2px;font-weight:600;display:flex;align-items:center;gap:3px;}
 
 /* ══ 탭 바 ══ */
 .tab-bar{background:var(--surface);border-bottom:2px solid var(--border);display:flex;gap:0;padding:0 20px;}
@@ -292,7 +293,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v2.1</div>
+  <div class="header-ver">v2.2</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -310,6 +311,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
   </div>
   <div class="ctrl-sep"></div>
   <select class="pol-select" id="polSelect" onchange="render()">
+    <option value="TOKYO+YOKOHAMA">TOKYO+YOKOHAMA</option>
     <option value="TOKYO">TOKYO</option>
     <option value="YOKOHAMA">YOKOHAMA</option>
   </select>
@@ -1262,11 +1264,11 @@ const ITEM_CODE_SHORT = {
   'Magazines':'M',
 };
 
-// CT種別 정식명 → 약칭
+// CT種別 → 약칭 (엑셀표 형식: C=40ft, M=MIX/20ft계, S=SOP 등)
 const CT_SHORT = {
-  '45GP':'C', '40GP':'C', '20GP':'C',
+  '45GP':'C', '40GP':'C', '45HQ':'C', '40HQ':'C',
+  '20GP':'M',
   '45R':'R',  '40R':'R',
-  '45HQ':'C', '40HQ':'C',
 };
 
 // 드레이 약칭 (short 그대로 사용, CY → 直送)
@@ -1331,15 +1333,19 @@ function formatScheduleLine(packerName, plantName, drayShort, itemCode, itemJa, 
   const pk = getPackerShort(packerName);
   const pl = getPlantShort(plantName);
   const dr = isCyDirect ? '直送' : getDrayShort(drayShort);
-  const it = getItemShort(itemCode, itemJa);
-  const ct = getCtShort(cttype);
-  const h = hon || 1;
+  const it = getItemShort(itemCode, itemJa);   // OCC→C, 雑誌→M 등
+  const ct = getCtShort(cttype);               // 45GP→C, 20GP→M 등
+  const h  = hon || 1;
   const tm = time ? time.slice(0,5) : 'フリー';
 
   const pkPl = pl ? `${pk}(${pl})` : pk;
-  const itCt = it ? `${it}${ct}${h}` : `${ct}${h}`;
+  // 엑셀표 형식: ITEM약칭 + CT약칭 + 本数  例) OCC=C, CT=C → C/C1 구분 위해 ITEM은 앞에 별도
+  // ITEM이 있으면: Packer(Plant)-ドレー [ITEM] CT本数 時間
+  // ITEM 없으면:   Packer(Plant)-ドレー CT本数 時間
+  const ctPart = `${ct}${h}`;
+  const itPart = it && it !== ct ? `[${it}]` : '';  // ITEM이 CT약칭과 다를 때만 표시
 
-  return `${pkPl}-${dr} ${itCt} ${tm}`;
+  return `${pkPl}-${dr} ${itPart}${ctPart} ${tm}`.trim();
 }
 
 // ══════════════════════════════════════════
@@ -1433,8 +1439,12 @@ async function refreshCompass(saveToCache = false){
       .filter(d => {
         // latest_vanning が해당월인 것만
         if(!d._latest_vanning) return false;
-        const van = d._latest_vanning.slice(0,10); // YYYY-MM-DD
-        return van >= fromDate && van <= toDate;
+        const van = d._latest_vanning.slice(0,10);
+        if(!(van >= fromDate && van <= toDate)) return false;
+        // POL 단일 선택 시 클라이언트 필터 (TOKYO+YOKOHAMA는 전건)
+        if(S.pol === 'TOKYO')     return d.cr49f_loading_port === '東京';
+        if(S.pol === 'YOKOHAMA')  return d.cr49f_loading_port === '横浜';
+        return true; // TOKYO+YOKOHAMA
       });
 
     // Packer별 집계
@@ -1500,11 +1510,14 @@ async function refreshCompass(saveToCache = false){
       } catch(_){}
     }));
 
-    // POL 필터: 선택된 항구만 남김
-    const selectedPol = S.pol; // 'TOKYO' or 'YOKOHAMA'
+    // POL 필터: 선택된 항구(TOKYO / YOKOHAMA / TOKYO+YOKOHAMA) 만 남김
+    const selectedPol = S.pol;
+    const polSet = selectedPol === 'TOKYO+YOKOHAMA'
+      ? new Set(['TOKYO','YOKOHAMA'])
+      : new Set([selectedPol]);
     const ciFiltered = ciRows.filter(r => {
       const bkgGuid = (r['_crcf9_booking_id_value'] || '').toUpperCase();
-      return (bkgPolMap[bkgGuid] || '') === selectedPol;
+      return polSet.has(bkgPolMap[bkgGuid] || '');
     });
 
     // Plant 명칭 + Packer 취득
@@ -1625,9 +1638,19 @@ function renderSummary(){
   ['池谷','IT','国際'].forEach(truck => {
     const color = TRUCK_COLORS[truck] || '#888';
     const confirmed = S.compassByTruck[truck] || 0;
+    const isActive = S.drayFilter === truck;
     const div = document.createElement('div');
-    div.className = 'truck-chip';
+    div.className = 'truck-chip' + (isActive ? ' active' : '');
+    div.style.cursor = 'pointer';
+    div.title = 'クリックでカレンダーフィルター';
     div.innerHTML = `<span style="color:${color};font-weight:700;">${truck}</span><span style="color:var(--ok);">確${confirmed}本</span>`;
+    div.addEventListener('click', () => {
+      // 이미 선택된 것이면 해제, 아니면 선택
+      S.drayFilter = (S.drayFilter === truck) ? '' : truck;
+      document.getElementById('drayFilter').value = S.drayFilter;
+      renderSummary();
+      renderCalendar();
+    });
     tc.appendChild(div);
   });
   // 우측 패널 집계
@@ -1682,10 +1705,14 @@ function renderPurchasePanel(){
         }).join('');
 
       const cardId = 'pk_' + idx;
+      const pkShort = getPackerShort(shortName) || shortName.slice(0,2);
+      const isActive = S.packerFilter === pkShort;
       html += `
       <div class="pk-card">
-        <div class="pk-card-header" onclick="togglePkCard('${cardId}')">
-          <div class="pk-name">${escH(shortName)}</div>
+        <div class="pk-card-header" style="cursor:pointer;"
+          onclick="togglePackerFilter('${cardId}','${pkShort}')"
+          title="クリックでカレンダーPacker絞込">
+          <div class="pk-name" style="${isActive?'color:var(--accent);':''}">${escH(shortName)}</div>
           <div class="pk-total">${data.total}本</div>
           <div class="pk-chevron open" id="${cardId}_chev">›</div>
         </div>
@@ -1704,6 +1731,15 @@ function togglePkCard(id){
   const chev = document.getElementById(id + '_chev');
   body.classList.toggle('open');
   chev.classList.toggle('open');
+}
+
+function togglePackerFilter(cardId, pkShort){
+  // 이미 선택됐으면 해제, 아니면 선택
+  S.packerFilter = (S.packerFilter === pkShort) ? '' : pkShort;
+  document.getElementById('packerFilter').value = S.packerFilter;
+  // 패널 재렌더(색상 표시) + 캘린더 재렌더
+  renderPurchasePanel();
+  renderCalendar();
 }
 
 
@@ -1847,8 +1883,8 @@ function buildCellHTML(date, ds, slots, dayScheds, fulfillment, compassDay){
       const cls = matched ? 'compass' : 'compass-ng';
       const matchBadge = matched
         ? `<span class="match-badge match-ok">✓</span>`
-        : `<span class="match-badge match-ng">❗未登録</span>`;
-      html += `<div class="sched-item ${cls}" style="font-size:9px;">${escH(line)}${matchBadge}</div>`;
+        : `<span class="match-badge match-ng">❗</span>`;
+      html += `<div class="sched-item ${cls}" style="font-size:11px;">${escH(line)}${matchBadge}</div>`;
     });
     html += `</div>`;
   }
@@ -1867,7 +1903,7 @@ function buildCellHTML(date, ds, slots, dayScheds, fulfillment, compassDay){
       const plShort = getPlantShort(s.packer || '');
       const pkPl = plShort && plShort !== pkShort ? `${pkShort}(${plShort})` : pkShort;
       const tm = s.time || 'フリー';
-      html += `<div class="sched-item ${cls}" style="font-size:9px;">${escH(pkPl||s.packer||'')}-${escH(s.truck)} ${escH(tm)}${badge2}</div>`;
+      html += `<div class="sched-item ${cls}" style="font-size:11px;">${escH(pkPl||s.packer||'')}-${escH(s.truck)} ${escH(tm)}${badge2}</div>`;
     });
     if(dayScheds.length > 3) html += `<div style="font-size:9px;color:var(--text3);">+${dayScheds.length-3}件</div>`;
   }

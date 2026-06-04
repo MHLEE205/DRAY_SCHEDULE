@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v2.4</title>
+<title>LEENAI ドレースケジュール管理 v2.5</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -71,7 +71,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 .pk-card{background:var(--surface2);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;overflow:hidden;}
 .pk-card-header{padding:8px 12px;display:flex;align-items:center;gap:8px;cursor:pointer;border-bottom:1px solid var(--border);}
 .pk-card-header:hover{background:var(--surface3);}
-.pk-name{font-size:12px;font-weight:700;flex:1;}
+.pk-name{font-size:13px;font-weight:700;flex:1;}
 .pk-total{font-size:12px;font-weight:700;color:var(--accent);}
 .pk-chevron{font-size:10px;color:var(--text3);transition:transform .2s;}
 .pk-chevron.open{transform:rotate(90deg);}
@@ -83,7 +83,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 .plant-row:hover{background:var(--surface3);}
 .plant-name{flex:1;color:var(--text2);font-weight:600;}
 .plant-count{font-weight:700;color:var(--warn);min-width:28px;text-align:right;}
-.plant-item{font-size:10px;color:var(--text3);background:var(--surface3);padding:1px 5px;border-radius:3px;}
+.plant-item{font-size:11px;color:var(--text3);background:var(--surface3);padding:1px 5px;border-radius:3px;}
 .plant-price{font-size:10px;color:var(--text3);}
 
 /* 확정 상태 바 */
@@ -127,9 +127,9 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 
 /* 仮押さえ 섹션 */
 .kari-section{padding:3px 5px;}
-.kari-label{font-size:9px;color:var(--text3);margin-bottom:2px;font-weight:600;}
+.kari-label{font-size:10px;color:var(--text3);margin-bottom:2px;font-weight:600;}
 .kari-slots{display:flex;gap:2px;flex-wrap:wrap;}
-.kari-slot{font-size:10px;padding:1px 5px;border-radius:4px;font-weight:700;border:1px solid;}
+.kari-slot{font-size:11px;padding:1px 5px;border-radius:4px;font-weight:700;border:1px solid;}
 .kari-slot.ok{background:var(--surface3);border-color:var(--border);color:var(--text2);}
 .kari-slot.ng{background:rgba(245,158,11,.15);border:1px dashed var(--warn);color:var(--warn);}
 .kari-slot.skip{text-decoration:line-through;opacity:.5;}
@@ -140,7 +140,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 
 /* 실제 스케줄 섹션 */
 .sched-section{padding:3px 5px;flex:1;border-top:1px solid var(--border);}
-.sched-item{font-size:11px;padding:2px 5px;border-radius:3px;margin-bottom:2px;border-left:2px solid;}
+.sched-item{font-size:12px;padding:2px 5px;border-radius:3px;margin-bottom:2px;border-left:2px solid;}
 .sched-item.confirmed{background:rgba(34,197,94,.1);border-left-color:var(--ok);}
 .sched-item.review{background:rgba(245,158,11,.1);border-left-color:var(--warn);}
 .sched-item.pending{background:rgba(239,68,68,.1);border-left-color:var(--danger);}
@@ -242,14 +242,14 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 .sched-item.sched-only{background:rgba(245,158,11,.12);border-left-color:var(--warn);}
 
 /* 대조 배지 */
-.match-badge{font-size:11px;padding:1px 4px;border-radius:3px;font-weight:700;margin-left:3px;}
+.match-badge{font-size:12px;padding:1px 4px;border-radius:3px;font-weight:700;margin-left:3px;}
 .match-ok{background:rgba(34,197,94,.2);color:var(--ok);}
 .match-warn{background:rgba(245,158,11,.2);color:var(--warn);}
 .match-ng{background:rgba(239,68,68,.2);color:var(--danger);}
 
 /* 날짜셀 COMPASS 전용 섹션 */
 .compass-section{padding:3px 5px;border-top:1px solid var(--border);}
-.compass-label{font-size:10px;color:var(--accent);margin-bottom:2px;font-weight:600;display:flex;align-items:center;gap:3px;}
+.compass-label{font-size:11px;color:var(--accent);margin-bottom:2px;font-weight:600;display:flex;align-items:center;gap:3px;}
 
 /* ══ 탭 바 ══ */
 .tab-bar{background:var(--surface);border-bottom:2px solid var(--border);display:flex;gap:0;padding:0 20px;}
@@ -293,7 +293,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v2.4</div>
+  <div class="header-ver">v2.5</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -1671,8 +1671,17 @@ function renderSummary(){
   document.getElementById('totalHon').textContent = S.compassTotal || '—';
   const tc = document.getElementById('truckBars');
   tc.innerHTML = '';
-  ['池谷','IT','国際'].forEach(truck => {
-    const color = TRUCK_COLORS[truck] || '#888';
+  // COMPASS 확정 데이터 기반 드레이 전체 + 仮押さえ 등록 드레이 합산
+  const truckList = Object.entries(S.compassByTruck||{})
+    .sort((a,b) => b[1]-a[1]).map(([t])=>t);
+  const kariPol = S.pol === 'TOKYO+YOKOHAMA' ? null : S.pol;
+  const kariTrucks = [...new Set(S.kariRules
+    .filter(r => !kariPol || r.pol === kariPol)
+    .map(r=>r.truck))];
+  const allTrucks = [...new Set([...truckList, ...kariTrucks])];
+
+  allTrucks.forEach(truck => {
+    const color = TRUCK_COLORS[truck] || '#aaa';
     const confirmed = S.compassByTruck[truck] || 0;
     const isActive = S.drayFilter === truck;
     const div = document.createElement('div');
@@ -1681,7 +1690,6 @@ function renderSummary(){
     div.title = 'クリックでカレンダーフィルター';
     div.innerHTML = `<span style="color:${color};font-weight:700;">${truck}</span><span style="color:var(--ok);">確${confirmed}本</span>`;
     div.addEventListener('click', () => {
-      // 이미 선택된 것이면 해제, 아니면 선택
       S.drayFilter = (S.drayFilter === truck) ? '' : truck;
       document.getElementById('drayFilter').value = S.drayFilter;
       renderSummary();
@@ -1710,7 +1718,7 @@ function renderPurchasePanel(){
   Object.entries(S.purchaseByPacker)
     .sort((a,b) => b[1].total - a[1].total)
     .forEach(([pkName, data], idx) => {
-      const shortName = pkName.replace('株式会社','').replace('有限会社','').replace('東京紙パルプ交易','TPC').trim();
+      const shortName = pkName.replace('株式会社','').replace('有限会社','').replace('東京紙パルプ交易','TKK').trim();
       const pct = S.compassTotal > 0 ? Math.min(100, Math.round(S.compassTotal * data.total / S.purchaseTotalHon)) : 0;
 
       // Plant(備考)별 그룹
@@ -1920,7 +1928,7 @@ function buildCellHTML(date, ds, slots, dayScheds, fulfillment, compassDay){
       const matchBadge = matched
         ? `<span class="match-badge match-ok">✓</span>`
         : `<span class="match-badge match-ng">❗</span>`;
-      html += `<div class="sched-item ${cls}" style="font-size:11px;">${escH(line)}${matchBadge}</div>`;
+      html += `<div class="sched-item ${cls}" style="font-size:12px;">${escH(line)}${matchBadge}</div>`;
     });
     html += `</div>`;
   }
@@ -1939,7 +1947,7 @@ function buildCellHTML(date, ds, slots, dayScheds, fulfillment, compassDay){
       const plShort = getPlantShort(s.packer || '');
       const pkPl = plShort && plShort !== pkShort ? `${pkShort}(${plShort})` : pkShort;
       const tm = s.time || 'フリー';
-      html += `<div class="sched-item ${cls}" style="font-size:11px;">${escH(pkPl||s.packer||'')}-${escH(s.truck)} ${escH(tm)}${badge2}</div>`;
+      html += `<div class="sched-item ${cls}" style="font-size:12px;">${escH(pkPl||s.packer||'')}-${escH(s.truck)} ${escH(tm)}${badge2}</div>`;
     });
     if(dayScheds.length > 3) html += `<div style="font-size:9px;color:var(--text3);">+${dayScheds.length-3}件</div>`;
   }

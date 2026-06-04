@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v1.7</title>
+<title>LEENAI ドレースケジュール管理 v2.0</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -258,7 +258,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v1.7</div>
+  <div class="header-ver">v2.0</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -626,23 +626,165 @@ async function init(){
   }
 }
 
-function loadMockData(){
-  // 仮押さえ 규칙 — localStorage에서 복원 or 초기값
+// ══════════════════════════════════════════
+// Dataverse CRUD (leenai_b05_*)
+// ══════════════════════════════════════════
+async function dvPost(entity, body){
+  const r = await fetch(`${CFG.DV_URL}/api/data/v9.2/${entity}`,{
+    method:'POST',
+    headers:{'Authorization':`Bearer ${S.accessToken}`,'OData-MaxVersion':'4.0',
+             'Accept':'application/json','Content-Type':'application/json'},
+    body: JSON.stringify(body)
+  });
+  if(!r.ok && r.status !== 204) throw new Error(r.status+': '+await r.text());
+  return r;
+}
+async function dvPatch(entity, id, body){
+  const r = await fetch(`${CFG.DV_URL}/api/data/v9.2/${entity}(${id})`,{
+    method:'PATCH',
+    headers:{'Authorization':`Bearer ${S.accessToken}`,'OData-MaxVersion':'4.0',
+             'Accept':'application/json','Content-Type':'application/json'},
+    body: JSON.stringify(body)
+  });
+  if(!r.ok && r.status !== 204) throw new Error(r.status+': '+await r.text());
+  return r;
+}
+async function dvDelete(entity, id){
+  const r = await fetch(`${CFG.DV_URL}/api/data/v9.2/${entity}(${id})`,{
+    method:'DELETE',
+    headers:{'Authorization':`Bearer ${S.accessToken}`,'OData-MaxVersion':'4.0'}
+  });
+  if(!r.ok && r.status !== 204) throw new Error(r.status+': '+await r.text());
+}
+
+// Dataverse에서 데이터 로드
+async function loadFromDataverse(){
+  showLoading('データ読込中...');
+  try {
+    // 仮押さえ規則
+    const rr = await dvGet(`leenai_b05_drayrules?$select=leenai_b05_drayruleid,leenai_truck,leenai_rule,leenai_timezone,leenai_hon,leenai_timerange,leenai_pol,leenai_active,leenai_label&$top=200`);
+    S.kariRules = (rr.value||[]).map(r=>({
+      id:        r.leenai_b05_drayruleid,
+      truck:     r.leenai_truck     || '',
+      rule:      r.leenai_rule      || 'weekday',
+      timezone:  r.leenai_timezone  || null,
+      hon:       r.leenai_hon       || 1,
+      timerange: r.leenai_timerange || '',
+      pol:       r.leenai_pol       || 'TOKYO',
+      active:    r.leenai_active    !== false,
+      label:     r.leenai_label     || '',
+      _dvId:     r.leenai_b05_drayruleid,
+    }));
+
+    // 例外
+    const re = await dvGet(`leenai_b05_ruleexceptions?$select=leenai_b05_ruleexceptionid,leenai_ruleid,leenai_exceptdate,leenai_type,leenai_hon&$top=500`);
+    S.kariExceptions = (re.value||[]).map(r=>({
+      id:      r.leenai_b05_ruleexceptionid,
+      ruleId:  r.leenai_ruleid   || '',
+      date:    (r.leenai_exceptdate||'').slice(0,10),
+      type:    r.leenai_type     || 'normal',
+      hon:     r.leenai_hon      || null,
+      _dvId:   r.leenai_b05_ruleexceptionid,
+    }));
+
+    // スケジュール (당월)
+    const yStr = String(S.currentYear);
+    const mStr = String(S.currentMonth).padStart(2,'0');
+    const lastDay = new Date(S.currentYear, S.currentMonth, 0).getDate();
+    const fromD = `${yStr}-${mStr}-01T00:00:00Z`;
+    const toD   = `${yStr}-${mStr}-${lastDay}T23:59:59Z`;
+    const rs = await dvGet(`leenai_b05_drayschedules?$filter=leenai_scheddate ge ${fromD} and leenai_scheddate le ${toD}&$select=leenai_b05_drayruleid,leenai_b05_drayschedule,leenai_b05_drayschedules,leenai_b05_draysid,leenai_name,leenai_truck,leenai_packer,leenai_scheduletime,leenai_cttype,leenai_hon,leenai_status,leenai_pol,leenai_bkgno,leenai_cycut,leenai_comment,leenai_createdby,leenai_scheddate&$top=500`);
+    S.schedules = (rs.value||[]).map(r=>({
+      id:      r.leenai_b05_draysid || r.leenai_b05_drayschedule || r['leenai_b05_drayschedules@odata.id'] || r['leenai_name'],
+      _dvId:   r.leenai_b05_draysid || r.leenai_b05_drayschedule,
+      date:    (r.leenai_scheddate||'').slice(0,10),
+      truck:   r.leenai_truck      || '',
+      packer:  r.leenai_packer     || '',
+      time:    r.leenai_scheduletime|| '',
+      cttype:  r.leenai_cttype     || '',
+      hon:     r.leenai_hon        || 1,
+      status:  r.leenai_status     || 'pending',
+      pol:     r.leenai_pol        || 'TOKYO',
+      bkgno:   r.leenai_bkgno     || '',
+      cycut:   r.leenai_cycut      || '',
+      comment: r.leenai_comment    || '',
+      createdby: r.leenai_createdby|| '',
+    }));
+
+    toast(`データ読込完了: 規則${S.kariRules.length}件 / 例外${S.kariExceptions.length}件 / スケジュール${S.schedules.length}件`, 'ok');
+  } catch(e){
+    toast('データ読込エラー: '+e.message.slice(0,50), 'err');
+    console.error(e);
+    // フォールバック: localStorage
+    loadLocalFallback();
+  } finally { hideLoading(); }
+}
+
+// localStorage フォールバック (ログイン前 / エラー時)
+function loadLocalFallback(){
   const savedRules = localStorage.getItem('b05_kari_rules');
   S.kariRules = savedRules ? JSON.parse(savedRules) : [...INITIAL_KARI_RULES];
-
   const savedExc = localStorage.getItem('b05_kari_exc');
   S.kariExceptions = savedExc ? JSON.parse(savedExc) : [];
-
   const savedSched = localStorage.getItem('b05_schedules');
   S.schedules = savedSched ? JSON.parse(savedSched) : [];
 }
+
+// 旧 関数名 互換
+function loadMockData(){ loadLocalFallback(); }
 
 function saveLocalData(){
   localStorage.setItem('b05_kari_rules', JSON.stringify(S.kariRules));
   localStorage.setItem('b05_kari_exc', JSON.stringify(S.kariExceptions));
   localStorage.setItem('b05_schedules', JSON.stringify(S.schedules));
 }
+
+// Dataverse スケジュール保存
+async function saveScheduleToDv(sched){
+  const body = {
+    leenai_name:         `${sched.date}_${sched.truck}_${sched.time||'フリー'}`,
+    leenai_truck:        sched.truck,
+    leenai_packer:       sched.packer   || '',
+    leenai_scheduletime: sched.time     || '',
+    leenai_cttype:       sched.cttype   || '',
+    leenai_hon:          sched.hon      || 1,
+    leenai_status:       sched.status   || 'pending',
+    leenai_pol:          sched.pol      || S.pol,
+    leenai_bkgno:        sched.bkgno    || '',
+    leenai_comment:      sched.comment  || '',
+    leenai_createdby:    S.loggedInEmail|| '',
+    leenai_scheddate:    sched.date + 'T00:00:00Z',
+  };
+  if(sched._dvId){
+    await dvPatch('leenai_b05_drayschedules', sched._dvId, body);
+    return sched._dvId;
+  } else {
+    const r = await dvPost('leenai_b05_drayschedules', body);
+    const loc = r.headers?.get('OData-EntityId') || '';
+    const m = loc.match(/\(([^)]+)\)$/);
+    return m ? m[1] : null;
+  }
+}
+
+// Dataverse 例外保存
+async function saveExceptionToDv(exc){
+  const body = {
+    leenai_name:       `${exc.ruleId}_${exc.date}`,
+    leenai_ruleid:     exc.ruleId,
+    leenai_exceptdate: exc.date + 'T00:00:00Z',
+    leenai_type:       exc.type,
+    leenai_hon:        exc.hon || null,
+  };
+  if(exc._dvId){
+    await dvPatch('leenai_b05_ruleexceptions', exc._dvId, body);
+  } else {
+    const r = await dvPost('leenai_b05_ruleexceptions', body);
+    const loc = r.headers?.get('OData-EntityId') || '';
+    const m = loc.match(/\(([^)]+)\)$/);
+    if(m) exc._dvId = m[1];
+  }
+}
+
 
 async function onLoggedIn(){
   if(S.loggedInName){
@@ -651,6 +793,8 @@ async function onLoggedIn(){
     el.style.display = 'block';
   }
   document.getElementById('compassBtn').textContent = '✅ COMPASS接続済';
+  // Dataverse からデータ読込
+  await loadFromDataverse();
   showApp();
   await refreshCompass();
 }
@@ -727,6 +871,37 @@ const ITEM_JA_MAP = {
 // ══════════════════════════════════════════
 // 표시 패턴 마스터 (엑셀표 형식 기반)
 // ══════════════════════════════════════════
+
+// POL 마스터 (compass_mapping.xlsx 실측 — crcf9_region_japan)
+const REGION_JAPAN_MAP = {
+  '0DD6FE6D-B35B-F011-BEC2-000D3A786F70': 'TOKYO',
+  '0ED6FE6D-B35B-F011-BEC2-000D3A786F70': 'YOKOHAMA',
+  '12D6FE6D-B35B-F011-BEC2-000D3A786F70': 'NAHA',
+  '33D51074-B35B-F011-BEC2-000D3A786F70': 'KOBE',
+  '34D51074-B35B-F011-BEC2-000D3A786F70': 'OSAKA',
+  '35D51074-B35B-F011-BEC2-000D3A786F70': 'SENDAI',
+  '36D51074-B35B-F011-BEC2-000D3A786F70': 'KANAZAWA',
+  '37D51074-B35B-F011-BEC2-000D3A786F70': 'NAGOYA',
+  '38D51074-B35B-F011-BEC2-000D3A786F70': 'HAKATA',
+  '39D51074-B35B-F011-BEC2-000D3A786F70': 'SHIMIZU',
+  '3AD51074-B35B-F011-BEC2-000D3A786F70': 'NIIGATA',
+  '3CD51074-B35B-F011-BEC2-000D3A786F70': 'FUKUYAMA',
+  '3DD51074-B35B-F011-BEC2-000D3A786F70': 'TAKAMATSU',
+  '3ED51074-B35B-F011-BEC2-000D3A786F70': 'TOMAKOMAI',
+  '3FD51074-B35B-F011-BEC2-000D3A786F70': 'MAIZURU',
+  '41D51074-B35B-F011-BEC2-000D3A786F70': 'ISHIKARI',
+  '43D51074-B35B-F011-BEC2-000D3A786F70': 'KUMAMOTO',
+  '44D51074-B35B-F011-BEC2-000D3A786F70': 'HACHINOHE',
+  '47D51074-B35B-F011-BEC2-000D3A786F70': 'YOKKAICHI',
+  '49D51074-B35B-F011-BEC2-000D3A786F70': 'NAOETSU',
+  '4BD51074-B35B-F011-BEC2-000D3A786F70': 'IYOMISHIMA',
+  '4DD51074-B35B-F011-BEC2-000D3A786F70': 'TOYAMA',
+  '4ED51074-B35B-F011-BEC2-000D3A786F70': 'MOJI',
+  '4FD51074-B35B-F011-BEC2-000D3A786F70': 'MIZUSHIMA',
+  '50D51074-B35B-F011-BEC2-000D3A786F70': 'IMARI',
+  '51D51074-B35B-F011-BEC2-000D3A786F70': 'HIROSHIMA',
+  '83CF51CE-912C-F111-88B3-7CED8DBF5321': 'AKITA',
+};
 
 // Packer 정식명/코드 → 약칭
 const PACKER_SHORT = {
@@ -996,31 +1171,50 @@ async function refreshCompass(saveToCache = false){
       '_crcf9_dray_id_value',
       'crcf9_type',
       '_crcf9_parker_plant_id_value',
-      '_crcf9_item_id_value',   // ITEM: container에 직접 있음 (BKG 경유 불필요)
+      '_crcf9_item_id_value',
+      '_crcf9_booking_id_value',   // POL 판별용 (BKG 경유)
     ].join(',');
     const ciData = await dvGet(
       `crcf9_container_informations?$filter=${ciFilter}&$select=${ciFields}&$top=2000`
     );
     const ciRows = ciData.value || [];
 
+    // BKG → POL 일괄 취득 (cr49f_booking의 _cr49f_region_japan_id_value)
+    showLoading('POL情報取得中...');
+    const bkgGuids = [...new Set(ciRows.map(r => r['_crcf9_booking_id_value']).filter(Boolean))];
+    const bkgPolMap = {}; // bkgGuid → polCode
+    await Promise.all(bkgGuids.map(async g => {
+      try {
+        const r = await dvGet(`cr49f_bookings(${g})?$select=_cr49f_region_japan_id_value`);
+        const rjGuid = (r['_cr49f_region_japan_id_value'] || '').toUpperCase();
+        bkgPolMap[g.toUpperCase()] = REGION_JAPAN_MAP[rjGuid] || '';
+      } catch(_){}
+    }));
+
+    // POL 필터: 선택된 항구만 남김
+    const selectedPol = S.pol; // 'TOKYO' or 'YOKOHAMA'
+    const ciFiltered = ciRows.filter(r => {
+      const bkgGuid = (r['_crcf9_booking_id_value'] || '').toUpperCase();
+      return (bkgPolMap[bkgGuid] || '') === selectedPol;
+    });
+
     // Plant 명칭 + Packer 취득
-    // compass_mapping: crcf9_packer_plant의 packer 링크 = _crcf9_packer_id_value
     showLoading(`Plant/Packer情報取得中...`);
-    const plantGuids = [...new Set(ciRows.map(r => r['_crcf9_parker_plant_id_value']).filter(Boolean))];
+    const plantGuids = [...new Set(ciFiltered.map(r => r['_crcf9_parker_plant_id_value']).filter(Boolean))];
     const plantMap = {}; // guid → {plant, packerCode}
     await Promise.all(plantGuids.map(async g => {
       try {
         const r = await dvGet(`crcf9_packer_plants(${g})?$select=crcf9_plant,crcf9_packer_id`);
         plantMap[g.toUpperCase()] = {
           plant:      r.crcf9_plant || '',
-          packerCode: r.crcf9_packer_id || '',  // 'KANEKO', 'TOKYO' 등 코드값
+          packerCode: r.crcf9_packer_id || '',
         };
       } catch(_){}
     }));
 
-    // ITEM 명칭 일괄 취득 (container의 _crcf9_item_id_value 직접 사용)
+    // ITEM 명칭 일괄 취득
     showLoading('品目情報取得中...');
-    const ciItemGuids = [...new Set(ciRows.map(r => r['_crcf9_item_id_value']).filter(Boolean))];
+    const ciItemGuids = [...new Set(ciFiltered.map(r => r['_crcf9_item_id_value']).filter(Boolean))];
     const ciItemMap = {}; // guid → {code, ja}
     await Promise.all(ciItemGuids.map(async g => {
       try {
@@ -1029,11 +1223,12 @@ async function refreshCompass(saveToCache = false){
       } catch(_){}
     }));
 
-    // COMPASS 스케줄 데이터 보강
-    S.compassSchedules = ciRows.map(r => {
-      const drayGuid  = (r['_crcf9_dray_id_value']         || '').toUpperCase();
-      const plantGuid = (r['_crcf9_parker_plant_id_value']  || '').toUpperCase();
-      const itemGuid  = (r['_crcf9_item_id_value']          || '').toUpperCase();
+    // COMPASS 스케줄 데이터 보강 (POL 필터된 ciFiltered 사용)
+    S.compassSchedules = ciFiltered.map(r => {
+      const drayGuid  = (r['_crcf9_dray_id_value']        || '').toUpperCase();
+      const plantGuid = (r['_crcf9_parker_plant_id_value'] || '').toUpperCase();
+      const itemGuid  = (r['_crcf9_item_id_value']         || '').toUpperCase();
+      const bkgGuid   = (r['_crcf9_booking_id_value']      || '').toUpperCase();
       const dray      = DRAY_MASTER_BY_GUID[drayGuid];
       const dateStr   = (r.crcf9_work_date || '').slice(0, 10);
       const plantInfo = plantMap[plantGuid] || {};
@@ -1047,10 +1242,11 @@ async function refreshCompass(saveToCache = false){
         drayGuid,
         plant:      plantInfo.plant || '',
         plantGuid,
-        packerCode: plantInfo.packerCode || '', // 'KANEKO', 'TOKYO' 등
+        packerCode: plantInfo.packerCode || '',
         cttype:     r.crcf9_type || '',
-        itemCode:   itemInfo.code || '',         // 'JOCC', 'JOMG' 등
-        itemJa:     itemInfo.ja  || '',          // '段ボール', '雑誌' 등
+        itemCode:   itemInfo.code || '',
+        itemJa:     itemInfo.ja  || '',
+        pol:        bkgPolMap[bkgGuid] || '',
         isCyDirect,
       };
     });
@@ -1063,7 +1259,7 @@ async function refreshCompass(saveToCache = false){
     });
 
     // 드레이별 집계
-    S.compassTotal = ciRows.length;
+    S.compassTotal = ciFiltered.length;
     S.compassByTruck = {};
     S.compassSchedules.forEach(s => {
       if(s.drayShort) S.compassByTruck[s.drayShort] = (S.compassByTruck[s.drayShort] || 0) + 1;
@@ -1370,7 +1566,6 @@ function buildKariSlot(slot, ds){
 }
 
 function getKariSlots(ds, dow){
-  const date = new Date(ds);
   const activeRules = S.kariRules.filter(r => r.pol === S.pol && r.active && (
     (r.rule === 'weekday' && dow >= 1 && dow <= 5) ||
     (r.rule === 'saturday' && dow === 6) ||
@@ -1379,20 +1574,26 @@ function getKariSlots(ds, dow){
 
   if(!activeRules.length) return {slots:[], fulfillment:'all-ok'};
 
+  // 수동 등록 + COMPASS 확정 스케줄 합산
   const dayScheds = S.schedules.filter(s => s.date === ds);
+  const compassDay = S.compassByDate[ds] || [];
+
   const slots = activeRules.map(rule => {
     const exc = S.kariExceptions.find(e => e.ruleId === rule.id && e.date === ds);
     if(exc?.type === 'skip') return {ruleId:rule.id, truck:rule.truck, timezone:rule.timezone, hon:rule.hon, fulfilled:true};
     const hon = exc?.type === 'change_hon' ? exc.hon : rule.hon;
-    const truckScheds = dayScheds.filter(s => s.truck === rule.truck);
-    const fulfilled = truckScheds.length >= hon;
+    // 수동 스케줄에서 매칭
+    const manualCount = dayScheds.filter(s => s.truck === rule.truck).length;
+    // COMPASS 확정에서도 매칭 (drayShort === rule.truck)
+    const compassCount = compassDay.filter(c => c.drayShort === rule.truck).length;
+    const fulfilled = (manualCount + compassCount) >= hon;
     return {ruleId:rule.id, truck:rule.truck, timezone:rule.timezone, hon, fulfilled};
   });
 
   const unfulfilled = slots.filter(s => !s.fulfilled && !S.kariExceptions.find(e => e.ruleId === s.ruleId && e.date === ds && e.type === 'skip'));
   let fulfillment = 'all-ok';
   if(unfulfilled.length > 0 && unfulfilled.length < slots.length) fulfillment = 'partial-ng';
-  else if(unfulfilled.length === slots.length) fulfillment = 'all-ng';
+  else if(unfulfilled.length === slots.length && slots.length > 0) fulfillment = 'all-ng';
 
   return {slots, fulfillment};
 }
@@ -1493,7 +1694,7 @@ function closeSchedModal(){
   document.getElementById('schedModal').classList.remove('open');
 }
 
-function saveSchedule(){
+async function saveSchedule(){
   const truck = document.getElementById('fTruck').value;
   if(!truck){ toast('ドレー業者を選択してください', 'err'); return; }
   const activeStatus = document.querySelector('.status-btn.active');
@@ -1517,17 +1718,39 @@ function saveSchedule(){
   saveLocalData();
   closeSchedModal();
   render();
-  toast('スケジュールを保存しました', 'ok');
-  // TODO: Dataverse POST leenai_b05_drayschedules
+  toast('保存中...', 'info');
+  // Dataverse 保存
+  if(S.accessToken && Date.now() < S.tokenExpiry){
+    try {
+      const dvId = await saveScheduleToDv(sched);
+      if(dvId) sched._dvId = dvId;
+      toast('スケジュールを保存しました ✅', 'ok');
+    } catch(e){
+      toast('DV保存失敗(ローカル保存済): '+e.message.slice(0,40), 'err');
+    }
+  } else {
+    toast('スケジュールをローカル保存しました', 'ok');
+  }
 }
 
-function deleteSchedule(id){
+async function deleteSchedule(id){
   if(!confirm('このスケジュールを削除しますか？')) return;
+  const sched = S.schedules.find(s => s.id === id);
   S.schedules = S.schedules.filter(s => s.id !== id);
   saveLocalData();
   closeSchedModal();
   render();
-  toast('削除しました', 'ok');
+  // Dataverse 削除
+  if(sched?._dvId && S.accessToken && Date.now() < S.tokenExpiry){
+    try {
+      await dvDelete('leenai_b05_drayschedules', sched._dvId);
+      toast('削除しました ✅', 'ok');
+    } catch(e){
+      toast('DV削除失敗(ローカル削除済): '+e.message.slice(0,40), 'err');
+    }
+  } else {
+    toast('削除しました', 'ok');
+  }
 }
 
 // ══════════════════════════════════════════
@@ -1567,12 +1790,21 @@ function closeExcModal(){
 
 function saveException(){
   // 기존 예외 제거
+  const oldExc = S.kariExceptions.find(e => e.ruleId === S.excRuleId && e.date === S.excDate);
   S.kariExceptions = S.kariExceptions.filter(e => !(e.ruleId === S.excRuleId && e.date === S.excDate));
+  // 기존 예외 DV 삭제
+  if(oldExc?._dvId && S.accessToken && Date.now() < S.tokenExpiry){
+    dvDelete('leenai_b05_ruleexceptions', oldExc._dvId).catch(()=>{});
+  }
   if(S.excType !== 'normal'){
     const exc = {ruleId: S.excRuleId, date: S.excDate, type: S.excType};
     if(S.excType === 'change_hon') exc.hon = parseInt(document.getElementById('excHon').value) || 2;
     if(S.excType === 'change_time') exc.time = document.getElementById('excTime').value;
     S.kariExceptions.push(exc);
+    // DV 저장
+    if(S.accessToken && Date.now() < S.tokenExpiry){
+      saveExceptionToDv(exc).catch(e => console.warn('例外DV保存失敗:', e));
+    }
   }
   saveLocalData();
   closeExcModal();

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v1.5</title>
+<title>LEENAI ドレースケジュール管理 v1.7</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -258,7 +258,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v1.5</div>
+  <div class="header-ver">v1.7</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -728,8 +728,15 @@ const ITEM_JA_MAP = {
 // 표시 패턴 마스터 (엑셀표 형식 기반)
 // ══════════════════════════════════════════
 
-// Packer 정식명 → 약칭
+// Packer 정식명/코드 → 약칭
 const PACKER_SHORT = {
+  // 코드값 (crcf9_packer_id)
+  'KANEKO':  '兼', 'TOKYO':   '東', 'UBUKTA':  'ウブ',
+  'KUMAGAI': '熊谷', 'GUNMA':  '群馬', 'TSURUMI': 'ツルミ',
+  'MARUKO':  '丸康', 'KYOEKI': '共益', 'YAMAJI':  '山治',
+  'IKUMINE': '育峯', 'FUJI':   '富士', 'TPC':     'TPC',
+  'OOMOTO':  '大本', 'SANKO':  '三弘', 'KAWASUZ': '川鈴',
+  // 일본어 정식명
   '兼子':           '兼',   '株式会社兼子':       '兼',
   'ウブカタ資源':   'ウブ', 'ウブカタ資源株式会社':'ウブ',
   '東京紙パルプ交易':'東',  '東京紙パルプ交易株式会社':'東',
@@ -979,9 +986,9 @@ async function refreshCompass(saveToCache = false){
     const ciFilter = [
       `crcf9_work_date ge ${fromISO}`,
       `crcf9_work_date le ${toISO}`,
-      `crcf9_incoterms eq '店頭渡し'`,
+      `crcf9_incoterms eq '店頭'`,
     ].join(' and ');
-    // ⚠️ _crcf9_region_japan_id_value は container_information に存在しないため除外
+    // compass_mapping.xlsx 실측 확인 완료 필드
     const ciFields = [
       'crcf9_container_informationid',
       'crcf9_work_date',
@@ -989,66 +996,48 @@ async function refreshCompass(saveToCache = false){
       '_crcf9_dray_id_value',
       'crcf9_type',
       '_crcf9_parker_plant_id_value',
-      '_crcf9_booking_id_value',
+      '_crcf9_item_id_value',   // ITEM: container에 직접 있음 (BKG 경유 불필요)
     ].join(',');
     const ciData = await dvGet(
       `crcf9_container_informations?$filter=${ciFilter}&$select=${ciFields}&$top=2000`
     );
     const ciRows = ciData.value || [];
 
-    // Plant 명칭 + Packer GUID 일괄 취득
-    showLoading(`Plant情報取得中...`);
+    // Plant 명칭 + Packer 취득
+    // compass_mapping: crcf9_packer_plant의 packer 링크 = _crcf9_packer_id_value
+    showLoading(`Plant/Packer情報取得中...`);
     const plantGuids = [...new Set(ciRows.map(r => r['_crcf9_parker_plant_id_value']).filter(Boolean))];
-    const plantMap = {}; // guid → {plant, packerGuid}
+    const plantMap = {}; // guid → {plant, packerCode}
     await Promise.all(plantGuids.map(async g => {
       try {
-        const r = await dvGet(`crcf9_packer_plants(${g})?$select=crcf9_plant,_cr49f_packer_id_value`);
+        const r = await dvGet(`crcf9_packer_plants(${g})?$select=crcf9_plant,crcf9_packer_id`);
         plantMap[g.toUpperCase()] = {
           plant:      r.crcf9_plant || '',
-          packerGuid: (r['_cr49f_packer_id_value'] || '').toUpperCase(),
+          packerCode: r.crcf9_packer_id || '',  // 'KANEKO', 'TOKYO' 등 코드값
         };
       } catch(_){}
     }));
 
-    // Packer명 일괄 취득
-    const ciPackerGuids = [...new Set(Object.values(plantMap).map(p => p.packerGuid).filter(Boolean))];
-    const ciPackerMap = {}; // guid → packerName
-    await Promise.all(ciPackerGuids.map(async g => {
-      try {
-        const r = await dvGet(`cr49f_packers(${g})?$select=cr49f_packer_name`);
-        ciPackerMap[g] = r.cr49f_packer_name || '';
-      } catch(_){}
-    }));
-
-    // BKG → booking_detail → ITEM 취득
+    // ITEM 명칭 일괄 취득 (container의 _crcf9_item_id_value 직접 사용)
     showLoading('品目情報取得中...');
-    const bkgGuids = [...new Set(ciRows.map(r => r['_crcf9_booking_id_value']).filter(Boolean))];
-    const bkgItemMap = {}; // bkgGuid → [{code, ja}...]
-    await Promise.all(bkgGuids.map(async g => {
+    const ciItemGuids = [...new Set(ciRows.map(r => r['_crcf9_item_id_value']).filter(Boolean))];
+    const ciItemMap = {}; // guid → {code, ja}
+    await Promise.all(ciItemGuids.map(async g => {
       try {
-        const r = await dvGet(
-          `cr49f_booking_details?$filter=_cr49f_booking_id_value eq ${g}&$select=_cr49f_item_id_value&$top=20`
-        );
-        const itemGuids = [...new Set((r.value||[]).map(d => d['_cr49f_item_id_value']).filter(Boolean))];
-        const items = await Promise.all(itemGuids.map(async ig => {
-          try {
-            const ir = await dvGet(`cr49f_items(${ig})?$select=cr49f_item,crcf9_item_japan`);
-            return { code: ir.cr49f_item || '', ja: ir.crcf9_item_japan || '' };
-          } catch(_){ return null; }
-        }));
-        bkgItemMap[g.toUpperCase()] = items.filter(Boolean);
+        const ir = await dvGet(`cr49f_items(${g})?$select=cr49f_item,crcf9_item_japan`);
+        ciItemMap[g.toUpperCase()] = { code: ir.cr49f_item || '', ja: ir.crcf9_item_japan || '' };
       } catch(_){}
     }));
 
     // COMPASS 스케줄 데이터 보강
     S.compassSchedules = ciRows.map(r => {
-      const drayGuid = (r['_crcf9_dray_id_value'] || '').toUpperCase();
-      const dray = DRAY_MASTER_BY_GUID[drayGuid];
-      const plantGuid = (r['_crcf9_parker_plant_id_value'] || '').toUpperCase();
-      const bkgGuid = (r['_crcf9_booking_id_value'] || '').toUpperCase();
-      const dateStr = (r.crcf9_work_date || '').slice(0, 10);
+      const drayGuid  = (r['_crcf9_dray_id_value']         || '').toUpperCase();
+      const plantGuid = (r['_crcf9_parker_plant_id_value']  || '').toUpperCase();
+      const itemGuid  = (r['_crcf9_item_id_value']          || '').toUpperCase();
+      const dray      = DRAY_MASTER_BY_GUID[drayGuid];
+      const dateStr   = (r.crcf9_work_date || '').slice(0, 10);
       const plantInfo = plantMap[plantGuid] || {};
-      const packerName = ciPackerMap[plantInfo.packerGuid] || '';
+      const itemInfo  = ciItemMap[itemGuid] || {};
       const isCyDirect = !drayGuid || !dray;
       return {
         id:         r.crcf9_container_informationid,
@@ -1058,11 +1047,11 @@ async function refreshCompass(saveToCache = false){
         drayGuid,
         plant:      plantInfo.plant || '',
         plantGuid,
-        packerName,
+        packerCode: plantInfo.packerCode || '', // 'KANEKO', 'TOKYO' 등
         cttype:     r.crcf9_type || '',
-        items:      bkgItemMap[bkgGuid] || [],
+        itemCode:   itemInfo.code || '',         // 'JOCC', 'JOMG' 등
+        itemJa:     itemInfo.ja  || '',          // '段ボール', '雑誌' 등
         isCyDirect,
-        bkgGuid,
       };
     });
 
@@ -1329,10 +1318,10 @@ function buildCellHTML(date, ds, slots, dayScheds, fulfillment){
       return a.time < b.time ? -1 : 1;
     });
     sorted.forEach(c => {
-      const firstItem = c.items[0] || {};
+      const firstItem = c.items?.[0] || {};
       const line = formatScheduleLine(
-        c.packerName, c.plant, c.drayShort,
-        firstItem.code, firstItem.ja,
+        c.packerCode, c.plant, c.drayShort,
+        c.itemCode, c.itemJa,
         c.cttype, 1, c.time, c.isCyDirect
       );
       // 대조: 날짜 + 드레이 일치 여부

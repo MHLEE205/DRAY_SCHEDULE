@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v2.9</title>
+<title>LEENAI ドレースケジュール管理 v3.0</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -293,7 +293,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v2.9</div>
+  <div class="header-ver">v3.0</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -1374,21 +1374,19 @@ async function refreshCompass(saveToCache = false){
 
     // ── STEP 1: 구매계약 잔량 ──
     // 店頭渡し → 全Packer対象
-    // 港渡し   → TKK(TOKYO) / 兼子(KANEKO) のみ
-    //   理由: TKK・兼子は港渡しで契約登録→後でPlant分割→店頭に変更する運用
+    // 港渡し   → TKK(TOKYO) / 兼子(KANEKO) のみ (クライアントサイドフィルター)
+    //   ※ _cr49f_packer_id_value は purchase_detail に存在しないため
+    //     purchase_contract 経由で取得後にフィルター
     showLoading('購買契約 取得中...');
-    const polFilter = `(cr49f_loading_port eq '東京' or cr49f_loading_port eq '横浜')`;
     // TKK / KANEKO の Packer GUID (実測確認済)
-    const MINATO_PACKER_GUIDS = [
+    const MINATO_PACKER_GUIDS = new Set([
       'b9054158-b85b-f011-bec2-000d3a786f70', // 兼子 KANEKO
       '3a423e5e-b85b-f011-bec2-000d3a786f70', // TKK TOKYO
-    ];
-    const minatoGuidFilter = MINATO_PACKER_GUIDS
-      .map(g => `_cr49f_packer_id_value eq ${g}`)
-      .join(' or ');
-    // 店頭 OR (港 AND TKK/KANEKO)
+    ]);
+    const polFilter = `(cr49f_loading_port eq '東京' or cr49f_loading_port eq '横浜')`;
+    // API: 店頭+港 両方取得 → クライアントで港渡しをTKK/KANEKO限定に絞る
     const pdFilter = [
-      `(cr49f_incoterms eq '店頭' or (cr49f_incoterms eq '港' and (${minatoGuidFilter})))`,
+      `(cr49f_incoterms eq '店頭' or cr49f_incoterms eq '港')`,
       polFilter,
       `cr49f_closing eq false`,
     ].join(' and ');
@@ -1448,6 +1446,7 @@ async function refreshCompass(saveToCache = false){
           _contract_no:    pc.contract_no,
           _latest_vanning: van,
           _packer_name:    pkName,
+          _packer_guid:    pc.packer_guid || '',
           _item_ja:        ITEM_JA_MAP[d['_cr49f_item_id_value_formatted']] || d['_cr49f_item_id_value_formatted'] || '',
         };
       })
@@ -1456,7 +1455,9 @@ async function refreshCompass(saveToCache = false){
         if(!d._latest_vanning) return false;
         const van = d._latest_vanning.slice(0,10);
         if(!(van >= fromDate && van <= toDate)) return false;
-        // POL 단일 선택 시 클라이언트 필터 (TOKYO+YOKOHAMA는 전건)
+        // 港渡し は TKK / KANEKO のみ表示 (他の港渡しPACKERは除外)
+        if(d.cr49f_incoterms === '港' && !MINATO_PACKER_GUIDS.has(d._packer_guid)) return false;
+        // POL 단일 선택 시 클라이언트 필터
         if(S.pol === 'TOKYO')     return d.cr49f_loading_port === '東京';
         if(S.pol === 'YOKOHAMA')  return d.cr49f_loading_port === '横浜';
         return true; // TOKYO+YOKOHAMA

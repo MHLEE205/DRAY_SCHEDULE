@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v2.5</title>
+<title>LEENAI ドレースケジュール管理 v2.6</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -293,7 +293,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v2.5</div>
+  <div class="header-ver">v2.6</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -1365,11 +1365,11 @@ async function refreshCompass(saveToCache = false){
     const toDate   = `${yStr}-${mStr}-${lastDay}`;
 
     // ── STEP 1: 구매계약 잔량 ──
-    // cr49f_purchase_details WHERE 店頭 AND TOKYO/YOKOHAMA AND closing=false AND latest_vanning 해당월
+    // TKK・KANEKO는 港渡しで登録→後でPlant分割→店頭に変更する運用のため
+    // incotermsは問わずloading_port(POL)のみでフィルター
     showLoading('購買契約 取得中...');
     const polFilter = `(cr49f_loading_port eq '東京' or cr49f_loading_port eq '横浜')`;
     const pdFilter = [
-      `cr49f_incoterms eq '店頭'`,
       polFilter,
       `cr49f_closing eq false`,
     ].join(' and ');

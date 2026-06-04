@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v2.2</title>
+<title>LEENAI ドレースケジュール管理 v2.4</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -293,7 +293,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v2.2</div>
+  <div class="header-ver">v2.4</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -1333,19 +1333,15 @@ function formatScheduleLine(packerName, plantName, drayShort, itemCode, itemJa, 
   const pk = getPackerShort(packerName);
   const pl = getPlantShort(plantName);
   const dr = isCyDirect ? '直送' : getDrayShort(drayShort);
-  const it = getItemShort(itemCode, itemJa);   // OCC→C, 雑誌→M 등
-  const ct = getCtShort(cttype);               // 45GP→C, 20GP→M 등
+  const it = getItemShort(itemCode, itemJa);  // OCC→C, 雑誌→M 등
   const h  = hon || 1;
   const tm = time ? time.slice(0,5) : 'フリー';
 
   const pkPl = pl ? `${pk}(${pl})` : pk;
-  // 엑셀표 형식: ITEM약칭 + CT약칭 + 本数  例) OCC=C, CT=C → C/C1 구분 위해 ITEM은 앞에 별도
-  // ITEM이 있으면: Packer(Plant)-ドレー [ITEM] CT本数 時間
-  // ITEM 없으면:   Packer(Plant)-ドレー CT本数 時間
-  const ctPart = `${ct}${h}`;
-  const itPart = it && it !== ct ? `[${it}]` : '';  // ITEM이 CT약칭과 다를 때만 표시
+  // CT 약칭なし — ITEM약칭 + 本数 のみ
+  const ctPart = it ? `${it}${h}` : `${h}`;
 
-  return `${pkPl}-${dr} ${itPart}${ctPart} ${tm}`.trim();
+  return `${pkPl}-${dr} ${ctPart} ${tm}`.trim();
 }
 
 // ══════════════════════════════════════════
@@ -1619,12 +1615,52 @@ async function refreshCompass(saveToCache = false){
 // ══════════════════════════════════════════
 // RENDER
 // ══════════════════════════════════════════
+// POL 변경 시 compassByDate / compassByTruck / purchaseByPacker 재구성
+function rebuildCompassByPol(){
+  if(!S.compassSchedules?.length && !S.purchaseDetails?.length) return;
+  const polSet = S.pol === 'TOKYO+YOKOHAMA'
+    ? new Set(['TOKYO','YOKOHAMA'])
+    : new Set([S.pol]);
+
+  // COMPASS 확정 재필터
+  const filtered = (S.compassSchedules||[]).filter(s => polSet.has(s.pol));
+  S.compassByDate = {};
+  filtered.forEach(s => {
+    if(!S.compassByDate[s.date]) S.compassByDate[s.date] = [];
+    S.compassByDate[s.date].push(s);
+  });
+  S.compassTotal = filtered.length;
+  S.compassByTruck = {};
+  filtered.forEach(s => {
+    if(s.drayShort) S.compassByTruck[s.drayShort] = (S.compassByTruck[s.drayShort]||0) + 1;
+  });
+
+  // 구매계약 잔량 재집계 (POL 필터 적용)
+  if(S.purchaseDetails?.length){
+    S.purchaseByPacker = {};
+    S.purchaseTotalHon = 0;
+    S.purchaseDetails.forEach(d => {
+      // POL 필터
+      if(S.pol === 'TOKYO'    && d.cr49f_loading_port !== '東京') return;
+      if(S.pol === 'YOKOHAMA' && d.cr49f_loading_port !== '横浜') return;
+      const pk = d._packer_name;
+      const hon = d.cr49f_count || 0;
+      if(!S.purchaseByPacker[pk]) S.purchaseByPacker[pk] = {total:0, details:[]};
+      S.purchaseByPacker[pk].total += hon;
+      S.purchaseByPacker[pk].details.push(d);
+      S.purchaseTotalHon += hon;
+    });
+    S.remainTotalHon = Math.max(0, S.purchaseTotalHon - S.compassTotal);
+  }
+}
+
 function render(){
   S.pol = document.getElementById('polSelect').value;
   S.drayFilter   = document.getElementById('drayFilter')?.value   || '';
   S.packerFilter = document.getElementById('packerFilter')?.value || '';
   const ml = `${S.currentYear}年${S.currentMonth}月`;
   document.getElementById('monthLabel').textContent = ml;
+  rebuildCompassByPol(); // POL 변경 반영
   renderSummary();
   renderCalendar();
   renderKariPanel();

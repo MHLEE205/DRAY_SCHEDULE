@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v4.0</title>
+<title>LEENAI ドレースケジュール管理 v4.1</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -293,7 +293,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v4.0</div>
+  <div class="header-ver">v4.1</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -1550,24 +1550,31 @@ async function refreshCompass(saveToCache = false){
     const bkgGuids = [...new Set(ciRows.map(r => r['_crcf9_booking_id_value']).filter(Boolean))];
     const bkgPolMap = {};   // bkgGuid → polCode
     const bkgInfoMap = {};  // bkgGuid → {bkgNo, vessel, carrier, pod}
-    await Promise.all(bkgGuids.map(async g => {
-      try {
-        const r = await dvGet(
-          `cr49f_bookings(${g})?$select=_cr49f_region_japan_id_value,cr49f_booking_no,cr49f_main_ship_name,_crcf9_carrier_id_value,_cr49f_region_id_value`
-        );
-        const rjGuid = (r['_cr49f_region_japan_id_value'] || '').toUpperCase();
-        const gUp = g.toUpperCase();
-        bkgPolMap[gUp] = REGION_JAPAN_MAP[rjGuid] || '';
-        bkgInfoMap[gUp] = {
-          bkgNo:  r.cr49f_booking_no        || '',
-          vessel: r.cr49f_main_ship_name     || '',
-          carrierGuid: (r['_crcf9_carrier_id_value'] || '').toUpperCase(),
-          podGuid:     (r['_cr49f_region_id_value']  || '').toUpperCase(),
-          carrier: '',
-          pod:     '',
-        };
-      } catch(_){}
-    }));
+    // BKG를 5건씩 배치로 조회 (에러 표시 포함)
+    const BKG_BATCH = 5;
+    for(let bi=0; bi<bkgGuids.length; bi+=BKG_BATCH){
+      const batch = bkgGuids.slice(bi, bi+BKG_BATCH);
+      await Promise.all(batch.map(async g => {
+        try {
+          const r = await dvGet(
+            `cr49f_bookings(${g})?$select=_cr49f_region_japan_id_value,cr49f_booking_no,cr49f_main_ship_name,_crcf9_carrier_id_value,_cr49f_region_id_value`
+          );
+          const rjGuid = (r['_cr49f_region_japan_id_value'] || '').toUpperCase();
+          const gUp = g.toUpperCase();
+          bkgPolMap[gUp] = REGION_JAPAN_MAP[rjGuid] || '';
+          bkgInfoMap[gUp] = {
+            bkgNo:  r.cr49f_booking_no        || '',
+            vessel: r.cr49f_main_ship_name     || '',
+            carrierGuid: (r['_crcf9_carrier_id_value'] || '').toUpperCase(),
+            podGuid:     (r['_cr49f_region_id_value']  || '').toUpperCase(),
+            carrier: '',
+            pod:     '',
+          };
+        } catch(e){ console.warn('BKG取得エラー:', g, e.message); }
+      }));
+      await new Promise(r=>setTimeout(r,100));
+    }
+    console.log(`BKG取得完了: ${Object.keys(bkgPolMap).length}/${bkgGuids.length}件`);
     // Carrier 명칭 취득
     const carrierGuids = [...new Set(Object.values(bkgInfoMap).map(b=>b.carrierGuid).filter(Boolean))];
     const carrierMap = {};

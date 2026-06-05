@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v5.1</title>
+<title>LEENAI ドレースケジュール管理 v5.2</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -99,10 +99,10 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 
 /* ══ Calendar ══ */
 .calendar-wrap{padding:8px 0;}
-.cal-header{display:grid;grid-template-columns:repeat(6,1fr) 0.3fr;gap:3px;margin-bottom:3px;}
+.cal-header{display:grid;grid-template-columns:0.85fr 0.85fr 0.85fr 0.85fr 1fr 1fr 0.2fr;gap:3px;margin-bottom:3px;}
 .cal-dow{text-align:center;font-size:10px;font-weight:700;color:var(--text3);padding:3px 0;}
 .cal-dow.sat{color:var(--info);}.cal-dow.sun{color:var(--danger);}
-.cal-grid{display:grid;grid-template-columns:repeat(6,1fr) 0.3fr;gap:3px;}
+.cal-grid{display:grid;grid-template-columns:0.85fr 0.85fr 0.85fr 0.85fr 1fr 1fr 0.2fr;gap:3px;}
 
 /* ══ Calendar Cell ══ */
 .cal-cell{background:var(--surface);border:1px solid var(--border);border-radius:6px;min-height:100px;cursor:pointer;transition:border-color .15s;overflow:hidden;display:flex;flex-direction:column;}
@@ -275,23 +275,21 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 .sc-alert{background:rgba(245,158,11,.1);border:1px solid var(--warn);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--warn);margin-top:10px;}
 .sc-company-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden;}
 /* 新購買パネル */
-.pr-contract{border-top:1px solid var(--border);margin:0;}
-.pr-contract-header{display:flex;align-items:center;gap:6px;padding:5px 10px;cursor:pointer;font-size:11px;background:var(--surface2);}
-.pr-contract-header:hover{background:var(--surface3);}
-.pr-cno{font-weight:700;color:var(--accent);flex:1;font-size:11px;}
-.pr-nums-mini{font-size:10px;color:var(--text2);white-space:nowrap;}
-.pr-rem-warn{color:var(--warn);font-weight:700;}
-.pr-chev{font-size:10px;color:var(--text3);transition:.2s;}
-.pr-grade-list{padding:4px 10px 6px;display:block;}
-.pr-grade-list.closed{display:none;}
-.pr-grade-header{display:grid;grid-template-columns:1.5fr repeat(4,1fr);font-size:9px;color:var(--text3);padding:2px 0;border-bottom:1px solid var(--border);margin-bottom:2px;text-align:right;}
-.pr-grade-header span:first-child{text-align:left;}
-.pr-grade-row{display:grid;grid-template-columns:1.5fr repeat(4,1fr);font-size:11px;padding:2px 0;align-items:center;}
-.pr-grade{font-weight:700;color:var(--text);}
-.pr-num{text-align:right;color:var(--text2);}
-.pr-num.ok{color:var(--ok);}
-.pr-num.info{color:var(--info);}
-.pr-num.warn{color:var(--warn);font-weight:700;}
+.pr-pol-section{margin-bottom:10px;}
+.pr-pol-header{font-size:12px;font-weight:700;color:var(--accent2);padding:6px 10px;background:var(--surface2);border-radius:6px;margin-bottom:4px;}
+.pr-plant-list{padding:2px 8px 4px 16px;display:none;}
+.pr-plant-list.closed{display:none;}
+.pr-plant-list:not(.closed){display:block;}
+.pr-plant-header{display:grid;grid-template-columns:1fr 1.5fr 0.5fr;font-size:9px;color:var(--text3);padding:2px 0;border-bottom:1px solid var(--border);}
+.pr-plant-row{display:grid;grid-template-columns:1fr 1.5fr 0.5fr;font-size:10px;padding:2px 0;color:var(--text2);}
+.pr-plant-name{color:var(--text);}
+.pr-plant-cno{color:var(--text3);font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.pr-plant-count{text-align:right;}
+.pr-grade-block{border-bottom:1px solid var(--border);}
+.pr-grade-block:last-child{border-bottom:none;}
+.pr-grade-row{cursor:pointer;}
+.pr-grade-row:hover{background:var(--surface2);}
+
 .sc-company-header{padding:10px 16px;display:flex;align-items:center;gap:10px;cursor:pointer;background:var(--surface2);}
 .sc-company-header:hover{background:var(--surface3);}
 .sc-company-name{font-size:13px;font-weight:700;flex:1;}
@@ -315,7 +313,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v5.1</div>
+  <div class="header-ver">v5.2</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -1838,135 +1836,155 @@ function renderPurchasePanel(){
     return;
   }
 
-  // COMPASS/B05 스케줄 → {date_dray_bkgGuid: count} 인덱스
-  const compassIdx = {}; // bkgGuid → CT count
+  // COMPASS 스케줄 → packerCode+Grade 별 집계 (POL별)
+  const compassCount = {}; // pol_packerCode_grade → count
   (S.compassSchedules||[]).forEach(c => {
-    if(!c.bkgGuid) return;
-    compassIdx[c.bkgGuid] = (compassIdx[c.bkgGuid]||0) + 1;
+    if(!c.pol || (c.pol!=='TOKYO'&&c.pol!=='YOKOHAMA')) return;
+    const k = `${c.pol}|${(c.packerCode||'').toUpperCase()}|${gradeShort(c.itemCode||'')}`;
+    compassCount[k] = (compassCount[k]||0) + 1;
   });
-  const b05Idx = {}; // bkgNo → count
+
+  // B05 스케줄 → packer+Grade 별 집계
+  const b05Count = {}; // pol_packerShort_grade → count
   (S.schedules||[]).forEach(s => {
-    const bk = s.leenai_bkgno||s.bkgno||'';
-    if(!bk) return;
-    b05Idx[bk] = (b05Idx[bk]||0) + 1;
+    const pol = s.leenai_pol||s.pol||'';
+    if(pol!=='TOKYO'&&pol!=='YOKOHAMA') return;
+    const sp = getPackerShort(s.packer||'');
+    const gr = gradeShort(s.leenai_cttype||s.cttype||'');
+    const k = `${pol}|${sp.toUpperCase()}|${gr}`;
+    b05Count[k] = (b05Count[k]||0) + 1;
   });
 
-  // Packer별 집계 (closing=false만, purchaseByPacker 기준)
+  // purchase_detail → pol별 분리
+  const detailsByPol = {TOKYO:[], YOKOHAMA:[]};
+  S.purchaseDetails.forEach(d => {
+    const pol = d.cr49f_loading_port === '東京' ? 'TOKYO'
+              : d.cr49f_loading_port === '横浜' ? 'YOKOHAMA' : null;
+    if(pol) detailsByPol[pol].push({...d, _pol: pol});
+  });
+
   let html = '';
-  Object.entries(S.purchaseByPacker)
-    .sort((a,b) => b[1].total - a[1].total)
-    .forEach(([pkName, data], idx) => {
-      const displayName = pkName.replace('株式会社','').replace('有限会社','').replace('東京紙パルプ交易','TKK').trim();
-      const shortName = getPackerShort(pkName) || displayName;
-      const cardId = 'pk_' + idx;
-      const isActive = S.packerFilter === shortName;
+  ['TOKYO','YOKOHAMA'].forEach(pol => {
+    const details = detailsByPol[pol];
+    if(!details.length) return;
 
-      // 계약번호별 그룹
-      const byContract = {};
-      data.details.forEach(d => {
-        const cno = d._contract_no || '(不明)';
-        if(!byContract[cno]) byContract[cno] = {details:[], bkgGuid: d._bkg_guid||''};
-        byContract[cno].details.push(d);
-      });
+    // Packer별 그룹
+    const byPacker = {};
+    details.forEach(d => {
+      const pk = d._packer_name || '(不明)';
+      if(!byPacker[pk]) byPacker[pk] = [];
+      byPacker[pk].push(d);
+    });
 
-      // Packer 합계
-      let pkTotal=0, pkCompass=0, pkB05=0;
-      data.details.forEach(d => { pkTotal += d.cr49f_count||0; });
+    // POL 합계
+    let polTotal=0, polCompass=0, polB05=0;
+    details.forEach(d => polTotal += d.cr49f_count||0);
 
-      // 계약번호별 행 렌더
-      const contractRows = Object.entries(byContract)
-        .sort((a,b) => a[0].localeCompare(b[0]))
-        .map(([cno, cdata]) => {
-          // Grade별 그룹
-          const byGrade = {};
-          cdata.details.forEach(d => {
-            const gr = gradeShort(d._item_ja || d['_cr49f_item_id_value_formatted'] || '');
-            if(!byGrade[gr]) byGrade[gr] = {contract:0, compass:0, b05:0};
-            byGrade[gr].contract += d.cr49f_count||0;
-          });
+    html += `<div class="pr-pol-section">
+      <div class="pr-pol-header">⚓ ${pol}</div>`;
 
-          // COMPASS/B05 수치 — bkgGuid 매핑 (COMPASS는 compassSchedules에서)
-          // 계약번호로 BKG 찾기 — compassSchedules의 bkgNo와 매칭
-          const matchedCompass = (S.compassSchedules||[]).filter(c => c.bkgNo && cdata.details.some(d => d._contract_no === cno));
-          // 간단히: 계약번호로 직접 BKG 매칭 어려우므로 전체 COMPASS 중 해당 Packer 건으로 근사
-          // → 나중에 BKG-계약 매핑 추가 예정, 우선 Packer+Grade 기준으로 집계
-          const compassByGrade = {};
-          (S.compassSchedules||[]).filter(c =>
-            (c.packerCode||'').toUpperCase() === (shortName||'').toUpperCase() ||
-            getPackerShort(c.packerCode||'') === shortName
-          ).forEach(c => {
-            const gr = gradeShort(c.itemCode||'');
-            compassByGrade[gr] = (compassByGrade[gr]||0) + 1;
-          });
+    Object.entries(byPacker)
+      .sort((a,b) => b[1].reduce((s,d)=>s+(d.cr49f_count||0),0) - a[1].reduce((s,d)=>s+(d.cr49f_count||0),0))
+      .forEach(([pkName, pkDetails], pidx) => {
+        const displayName = pkName.replace('株式会社','').replace('有限会社','').replace('東京紙パルプ交易','TKK').trim();
+        const shortName   = getPackerShort(pkName) || displayName;
+        const cardId      = `pk_${pol}_${pidx}`;
+        const isActive    = S.packerFilter === shortName;
 
-          const b05ByGrade = {};
-          (S.schedules||[]).filter(s => {
-            const sp = getPackerShort(s.packer||'');
-            return sp === shortName || (s.packer||'').includes(shortName);
-          }).forEach(s => {
-            const gr = gradeShort(s.leenai_cttype||s.cttype||'');
-            b05ByGrade[gr] = (b05ByGrade[gr]||0) + 1;
-          });
+        // Grade별 그룹
+        const byGrade = {};
+        pkDetails.forEach(d => {
+          const gr = gradeShort(d._item_ja || d['_cr49f_item_id_value_formatted'] || '');
+          if(!byGrade[gr]) byGrade[gr] = [];
+          byGrade[gr].push(d);
+        });
 
-          let cTotal=0, cCompass=0, cB05=0;
-          Object.values(byGrade).forEach(v=>cTotal+=v.contract);
+        let pkTotal=0, pkCompass=0, pkB05=0;
 
-          const gradeRows = Object.entries(byGrade).map(([gr, gd]) => {
-            const comp = compassByGrade[gr]||0;
-            const b05  = b05ByGrade[gr]||0;
-            const rem  = Math.max(0, gd.contract - comp);
-            cCompass += comp; cB05 += b05;
-            pkCompass += comp; pkB05 += b05;
-            return `<div class="pr-grade-row">
-              <span class="pr-grade">${escH(gr)}</span>
-              <span class="pr-num" title="契約">${gd.contract}</span>
-              <span class="pr-num ok" title="COMPASS">${comp}</span>
-              <span class="pr-num info" title="入力">${b05}</span>
-              <span class="pr-num ${rem>0?'warn':''}" title="残">${rem}</span>
+        const gradeRows = Object.entries(byGrade)
+          .sort((a,b) => a[0].localeCompare(b[0]))
+          .map(([gr, gds]) => {
+            const contract = gds.reduce((s,d)=>s+(d.cr49f_count||0),0);
+            const ck = `${pol}|${shortName.toUpperCase()}|${gr}`;
+            const compass = compassCount[ck]||0;
+            const b05     = b05Count[ck]||0;
+            const rem     = Math.max(0, contract - compass);
+            pkTotal   += contract;
+            pkCompass += compass;
+            pkB05     += b05;
+            polCompass += compass;
+            polB05     += b05;
+
+            // Plant별 그룹 (備考)
+            const byPlant = {};
+            gds.forEach(d => {
+              const plant = d.cr49f_remark?.trim() || '—';
+              if(!byPlant[plant]) byPlant[plant] = [];
+              byPlant[plant].push(d);
+            });
+            const plantRows = Object.entries(byPlant).map(([plant, pds]) => {
+              const pContract = pds.reduce((s,d)=>s+(d.cr49f_count||0),0);
+              const cno = [...new Set(pds.map(d=>d._contract_no).filter(Boolean))].join(', ') || '—';
+              return `<div class="pr-plant-row">
+                <span class="pr-plant-name">${escH(plant)}</span>
+                <span class="pr-plant-cno">${escH(cno)}</span>
+                <span class="pr-plant-count">${pContract}</span>
+              </div>`;
+            }).join('');
+
+            const plantId = `${cardId}_${gr.replace(/[^a-zA-Z0-9]/g,'_')}`;
+            return `<div class="pr-grade-block">
+              <div class="pr-grade-row" onclick="togglePkCard('${plantId}')">
+                <span class="pr-grade">${escH(gr)}</span>
+                <span class="pr-num">${contract}</span>
+                <span class="pr-num ok">${compass}</span>
+                <span class="pr-num info">${b05}</span>
+                <span class="pr-num ${rem>0?'warn':''}">${rem}</span>
+              </div>
+              <div class="pr-plant-list closed" id="${plantId}">
+                <div class="pr-plant-header"><span>Plant</span><span>契約番号</span><span>本</span></div>
+                ${plantRows}
+              </div>
             </div>`;
           }).join('');
 
-          const cRem = Math.max(0, cTotal - cCompass);
-          return `<div class="pr-contract">
-            <div class="pr-contract-header" onclick="togglePkCard('prc_${cardId}_${cno.replace(/[^a-zA-Z0-9]/g,'_')}')">
-              <span class="pr-cno">${escH(cno)}</span>
-              <span class="pr-nums-mini">契${cTotal} 確${cCompass} 入${cB05} <span class="${cRem>0?'pr-rem-warn':''}">残${cRem}</span></span>
-              <span class="pr-chev" id="prc_${cardId}_${cno.replace(/[^a-zA-Z0-9]/g,'_')}_chev">›</span>
-            </div>
-            <div class="pr-grade-list" id="prc_${cardId}_${cno.replace(/[^a-zA-Z0-9]/g,'_')}">
-              <div class="pr-grade-header">
-                <span>Grade</span><span title="契約">契</span><span title="COMPASS">確</span><span title="入力">入</span><span title="残">残</span>
-              </div>
-              ${gradeRows}
-            </div>
-          </div>`;
-        }).join('');
+        const pkRem = Math.max(0, pkTotal - pkCompass);
+        const pct   = pkTotal > 0 ? Math.min(100, Math.round(pkCompass/pkTotal*100)) : 0;
+        polTotal += pkTotal;
 
-      const pkRem = Math.max(0, pkTotal - pkCompass);
-      const pct = pkTotal > 0 ? Math.min(100, Math.round(pkCompass / pkTotal * 100)) : 0;
+        html += `<div class="pk-card">
+          <div class="pk-card-header" style="cursor:pointer;"
+            onclick="togglePackerFilter('${cardId}','${shortName}')"
+            title="クリックでカレンダーPacker絞込">
+            <div class="pk-name" style="${isActive?'color:var(--accent);font-weight:900;':''}">
+              ${escH(displayName)}
+            </div>
+            <div style="display:flex;gap:4px;font-size:10px;flex-wrap:wrap;">
+              <span style="color:var(--text3);">契${pkTotal}</span>
+              <span style="color:var(--ok);">確${pkCompass}</span>
+              <span style="color:var(--info);">入${pkB05}</span>
+              <span style="color:${pkRem>0?'var(--warn)':'var(--text3)'};">残${pkRem}</span>
+            </div>
+            <div class="pk-chevron open" id="${cardId}_chev">›</div>
+          </div>
+          <div class="pk-progress"><div class="pk-progress-fill" style="width:${pct}%;"></div></div>
+          <div class="pk-body open" id="${cardId}">
+            <div class="pr-grade-header">
+              <span>Grade</span><span>契</span><span>確</span><span>入</span><span>残</span>
+            </div>
+            ${gradeRows}
+          </div>
+        </div>`;
+      });
 
-      html += `
-      <div class="pk-card">
-        <div class="pk-card-header" style="cursor:pointer;"
-          onclick="togglePackerFilter('${cardId}','${shortName}')"
-          title="クリックでカレンダーPacker絞込">
-          <div class="pk-name" style="${isActive?'color:var(--accent);font-weight:900;':''}">
-            ${escH(displayName)}
-          </div>
-          <div style="display:flex;gap:6px;align-items:center;font-size:10px;">
-            <span style="color:var(--text3);">契${pkTotal}</span>
-            <span style="color:var(--ok);">確${pkCompass}</span>
-            <span style="color:var(--info);">入${pkB05}</span>
-            <span style="color:${pkRem>0?'var(--warn)':'var(--text3)'};">残${pkRem}</span>
-          </div>
-          <div class="pk-chevron open" id="${cardId}_chev">›</div>
-        </div>
-        <div class="pk-progress"><div class="pk-progress-fill" style="width:${pct}%;"></div></div>
-        <div class="pk-body open" id="${cardId}">
-          ${contractRows}
-        </div>
-      </div>`;
-    });
+    const polRem = Math.max(0, polTotal - polCompass);
+    // POL 소계 삽입 (섹션 헤더 업데이트)
+    html = html.replace(
+      `<div class="pr-pol-header">⚓ ${pol}</div>`,
+      `<div class="pr-pol-header">⚓ ${pol} <span style="font-size:10px;color:var(--text2);margin-left:6px;">契${polTotal} 確${polCompass} 入${polB05} <span style="color:${polRem>0?'var(--warn)':'var(--text3)'};">残${polRem}</span></span></div>`
+    );
+    html += '</div>';
+  });
 
   body.innerHTML = html || '<div style="text-align:center;color:var(--text3);padding:10px;font-size:11px;">データなし</div>';
 }

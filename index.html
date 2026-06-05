@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v5.5</title>
+<title>LEENAI ドレースケジュール管理 v5.6</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -319,7 +319,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v5.5</div>
+  <div class="header-ver">v5.6</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -1962,7 +1962,7 @@ function renderPurchasePanel(){
             polCompass += compass;
             polB05     += b05;
 
-            // Plant별 그룹 (備考)
+            // Plant → 계약번호 → 각각 행으로 분리
             const byPlant = {};
             gds.forEach(d => {
               const plant = d.cr49f_remark?.trim() || '—';
@@ -1970,16 +1970,21 @@ function renderPurchasePanel(){
               byPlant[plant].push(d);
             });
             const plantRows = Object.entries(byPlant).map(([plant, pds]) => {
-              const pContract = pds.reduce((s,d)=>s+(d.cr49f_count||0),0);
-              const cno = [...new Set(pds.map(d=>d._contract_no).filter(Boolean))].join(', ') || '—';
-              return `<div class="pr-plant-row">
-                <span class="pr-plant-name">${escH(plant)}</span>
-                <span class="pr-plant-cno">${escH(cno)}</span>
-                <span class="pr-plant-count">${pContract}</span>
-              </div>`;
+              // 계약번호별로 각각 1행씩
+              const cnoRows = pds.map(d => {
+                const cno = d._contract_no || '—';
+                const cnt = d.cr49f_count || 0;
+                return `<div class="pr-plant-row">
+                  <span class="pr-plant-name">${escH(plant)}</span>
+                  <span class="pr-plant-cno">${escH(cno)}</span>
+                  <span class="pr-plant-count">${cnt}</span>
+                </div>`;
+              }).join('');
+              return cnoRows;
             }).join('');
 
-            const plantId = `${cardId}_${gr.replace(/[^a-zA-Z0-9]/g,'_')}`;
+            // plantId: pol+packer인덱스+grade 조합으로 고유하게
+            const plantId = `${cardId}_gr_${gr.replace(/[^a-zA-Z0-9]/g,'_')}`;
             return `<div class="pr-grade-block">
               <div class="pr-grade-row" onclick="togglePkCard('${plantId}')">
                 <span class="pr-grade">${escH(gr)}</span>

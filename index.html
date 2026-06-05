@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v5.4</title>
+<title>LEENAI ドレースケジュール管理 v5.5</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -99,10 +99,10 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 
 /* ══ Calendar ══ */
 .calendar-wrap{padding:8px 0;}
-.cal-header{display:grid;grid-template-columns:repeat(6,0.65fr) 0.18fr;gap:2px;margin-bottom:3px;}
+.cal-header{display:grid;grid-template-columns:repeat(6,0.5fr) 0.15fr;gap:2px;margin-bottom:3px;}
 .cal-dow{text-align:center;font-size:10px;font-weight:700;color:var(--text3);padding:3px 0;}
 .cal-dow.sat{color:var(--info);}.cal-dow.sun{color:var(--danger);}
-.cal-grid{display:grid;grid-template-columns:repeat(6,0.65fr) 0.18fr;gap:2px;}
+.cal-grid{display:grid;grid-template-columns:repeat(6,0.5fr) 0.15fr;gap:2px;}
 
 /* ══ Calendar Cell ══ */
 .cal-cell{background:var(--surface);border:1px solid var(--border);border-radius:6px;min-height:100px;cursor:pointer;transition:border-color .15s;overflow:hidden;display:flex;flex-direction:column;}
@@ -279,10 +279,10 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 .pr-pol-header{font-size:12px;font-weight:700;color:var(--accent2);padding:6px 10px;background:var(--surface2);border-radius:6px;margin-bottom:4px;}
 .pr-plant-list{padding:4px 8px 6px 16px;display:block;}
 .pr-plant-list.closed{display:none;}
-.pr-plant-header{display:grid;grid-template-columns:1fr 1.5fr 0.5fr;font-size:9px;color:var(--text3);padding:2px 0;border-bottom:1px solid var(--border);}
-.pr-plant-row{display:grid;grid-template-columns:1fr 1.5fr 0.5fr;font-size:10px;padding:2px 0;color:var(--text2);}
+.pr-plant-header{display:grid;grid-template-columns:1fr 1.5fr 0.5fr;font-size:9px;color:var(--text2);padding:3px 0 2px;border-bottom:1px solid var(--border);font-weight:600;}
+.pr-plant-row{display:grid;grid-template-columns:1fr 1.5fr 0.5fr;font-size:10px;padding:3px 0;color:var(--text);}
 .pr-plant-name{color:var(--text);}
-.pr-plant-cno{color:var(--text3);font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.pr-plant-cno{color:var(--accent);font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .pr-plant-count{text-align:right;}
 .pr-grade-block{border-bottom:1px solid var(--border);}
 .pr-grade-block:last-child{border-bottom:none;}
@@ -319,7 +319,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v5.4</div>
+  <div class="header-ver">v5.5</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -1859,6 +1859,20 @@ function gradeShort(code){
   return GRADE_SHORT[code] || GRADE_SHORT[code.trim()] || code || '—';
 }
 
+// Grade 일본어 표시名 (우측 패널용)
+const GRADE_JA = {
+  'JOCC':'段ボール', 'JOMG':'雑誌',   'JOOP':'SOP',    'JBBC':'BBC',
+  'JOCP':'台紙',     'JONP':'新聞',    'JSOP':'SOP',    'JOWP':'白',
+  'SHREDDER':'シュレッダー',
+  // 日本語名そのまま通す
+  '段ボール':'段ボール','雑誌':'雑誌','新聞':'新聞','残紙':'残紙',
+  'SOP':'SOP','シュレッダー':'シュレッダー','古着':'古着','古紙':'古紙',
+};
+function gradeJa(code){
+  if(!code) return '—';
+  return GRADE_JA[code] || GRADE_JA[code.trim()] || code || '—';
+}
+
 function renderPurchasePanel(){
   const body = document.getElementById('purchaseBody');
   if(!body) return;
@@ -1873,7 +1887,7 @@ function renderPurchasePanel(){
   (S.compassSchedules||[]).forEach(c => {
     if(!c.pol || (c.pol!=='TOKYO'&&c.pol!=='YOKOHAMA')) return;
     const pkShort = compassPackerToShort(c.packerCode||'');
-    const k = `${c.pol}|${pkShort}|${gradeShort(c.itemCode||'')}`;
+    const k = `${c.pol}|${pkShort}|${gradeJa(c.itemCode||'')}`;
     compassCount[k] = (compassCount[k]||0) + 1;
   });
 
@@ -1883,7 +1897,7 @@ function renderPurchasePanel(){
     const pol = s.leenai_pol||s.pol||'';
     if(pol!=='TOKYO'&&pol!=='YOKOHAMA') return;
     const sp = getPackerShort(s.packer||'');
-    const gr = gradeShort(s.leenai_cttype||s.cttype||'');
+    const gr = gradeJa(s.leenai_cttype||s.cttype||'');
     const k = `${pol}|${sp}|${gr}`;
     b05Count[k] = (b05Count[k]||0) + 1;
   });
@@ -1927,7 +1941,7 @@ function renderPurchasePanel(){
         // Grade별 그룹
         const byGrade = {};
         pkDetails.forEach(d => {
-          const gr = gradeShort(d._item_ja || d['_cr49f_item_id_value_formatted'] || '');
+          const gr = gradeJa(d._item_ja || d['_cr49f_item_id_value_formatted'] || '');
           if(!byGrade[gr]) byGrade[gr] = [];
           byGrade[gr].push(d);
         });

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v5.3</title>
+<title>LEENAI ドレースケジュール管理 v5.4</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -99,10 +99,10 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 
 /* ══ Calendar ══ */
 .calendar-wrap{padding:8px 0;}
-.cal-header{display:grid;grid-template-columns:repeat(6,0.8fr) 0.2fr;gap:3px;margin-bottom:3px;}
+.cal-header{display:grid;grid-template-columns:repeat(6,0.65fr) 0.18fr;gap:2px;margin-bottom:3px;}
 .cal-dow{text-align:center;font-size:10px;font-weight:700;color:var(--text3);padding:3px 0;}
 .cal-dow.sat{color:var(--info);}.cal-dow.sun{color:var(--danger);}
-.cal-grid{display:grid;grid-template-columns:repeat(6,0.8fr) 0.2fr;gap:3px;}
+.cal-grid{display:grid;grid-template-columns:repeat(6,0.65fr) 0.18fr;gap:2px;}
 
 /* ══ Calendar Cell ══ */
 .cal-cell{background:var(--surface);border:1px solid var(--border);border-radius:6px;min-height:100px;cursor:pointer;transition:border-color .15s;overflow:hidden;display:flex;flex-direction:column;}
@@ -277,9 +277,8 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 /* 新購買パネル */
 .pr-pol-section{margin-bottom:10px;}
 .pr-pol-header{font-size:12px;font-weight:700;color:var(--accent2);padding:6px 10px;background:var(--surface2);border-radius:6px;margin-bottom:4px;}
-.pr-plant-list{padding:2px 8px 4px 16px;display:none;}
+.pr-plant-list{padding:4px 8px 6px 16px;display:block;}
 .pr-plant-list.closed{display:none;}
-.pr-plant-list:not(.closed){display:block;}
 .pr-plant-header{display:grid;grid-template-columns:1fr 1.5fr 0.5fr;font-size:9px;color:var(--text3);padding:2px 0;border-bottom:1px solid var(--border);}
 .pr-plant-row{display:grid;grid-template-columns:1fr 1.5fr 0.5fr;font-size:10px;padding:2px 0;color:var(--text2);}
 .pr-plant-name{color:var(--text);}
@@ -320,7 +319,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v5.3</div>
+  <div class="header-ver">v5.4</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -1847,11 +1846,18 @@ function compassPackerToShort(code){
 
 // Grade 코드 → 약칭
 const GRADE_SHORT = {
+  // ITEM 코드
   'JOCC':'C','JOMG':'M','JOOP':'S','JBBC':'B','JOCP':'B',
   'JONP':'N','JSOP':'S','SHREDDER':'シ','JOWP':'W',
   'OCC':'C','OMG':'M','SOP':'S','BBC':'B','ONP':'N',
+  // 일본어명 (purchase_detail _item_ja)
+  '段ボール':'C','雑誌':'M','新聞':'N','残紙':'残',
+  'SOP':'S','シュレッダー':'シ','古着':'古','古紙':'古',
 };
-function gradeShort(code){ return GRADE_SHORT[code] || code || '—'; }
+function gradeShort(code){
+  if(!code) return '—';
+  return GRADE_SHORT[code] || GRADE_SHORT[code.trim()] || code || '—';
+}
 
 function renderPurchasePanel(){
   const body = document.getElementById('purchaseBody');

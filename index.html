@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v4.9</title>
+<title>LEENAI ドレースケジュール管理 v5.0</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -246,7 +246,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 /* 대조 배지 */
 .match-badge{font-size:12px;padding:1px 4px;border-radius:3px;font-weight:700;margin-left:3px;}
 .match-ok{background:rgba(34,197,94,.2);color:var(--ok);}
-.match-warn{background:rgba(245,158,11,.2);color:var(--warn);}
+.match-warn{background:rgba(245,158,11,.2);color:var(--warn);font-size:9px;padding:1px 3px;}
 .match-ng{background:rgba(239,68,68,.2);color:var(--danger);}
 
 /* 날짜셀 COMPASS 전용 섹션 */
@@ -295,7 +295,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v4.9</div>
+  <div class="header-ver">v5.0</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -2153,7 +2153,7 @@ function openSchedModal(ds, dateObj, addMode = false){
       const matchCls = compassMatch ? 'ei-compass-ok' : 'ei-compass-ng';
       const matchBadge = compassMatch
         ? `<span style="font-size:10px;color:var(--ok);margin-right:4px;">✓COMPASS</span>`
-        : `<span style="font-size:10px;color:var(--danger);margin-right:4px;">COMPASS未</span>`;
+        : `<span style="font-size:9px;color:var(--danger);margin-right:4px;">COMPASS未</span>`;
       html += `<div class="existing-item ${s.status} ${matchCls}">
         <div class="ei-truck">${escH(s.truck)}</div>
         <div class="ei-info">${escH(s.packer||'')} ${escH(s.leenai_scheduletime||s.time||'')} ${escH(itemLabel)}</div>

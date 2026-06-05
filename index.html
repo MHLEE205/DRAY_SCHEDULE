@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v4.5</title>
+<title>LEENAI ドレースケジュール管理 v4.6</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -293,7 +293,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v4.5</div>
+  <div class="header-ver">v4.6</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -1485,7 +1485,8 @@ async function refreshCompass(saveToCache = false){
         // 港渡し は TKK / KANEKO のみ表示 (他の港渡しPACKERは除外)
         if(d.cr49f_incoterms === '港' && !MINATO_PACKER_GUIDS.has(d._packer_guid)) return false;
         // POL 단일 선택 시 클라이언트 필터
-        // POL固定廃止: 全件表示
+        // TOKYO+YOKOHAMA만 표시
+      if(d.cr49f_loading_port !== '東京' && d.cr49f_loading_port !== '横浜') return false;
         return true; // TOKYO+YOKOHAMA
       });
 
@@ -1692,7 +1693,8 @@ function rebuildCompassByPol(){
     : new Set([S.pol]);
 
   // COMPASS 확정 재필터
-  const filtered = (S.compassSchedules||[]); // POL固定廃止: 全件表示
+  // TOKYO+YOKOHAMA만 표시 (필터는 유지, 화면 분리는 하지 않음)
+  const filtered = (S.compassSchedules||[]).filter(s => s.pol === 'TOKYO' || s.pol === 'YOKOHAMA' || s.pol === '');
   S.compassByDate = {};
   filtered.forEach(s => {
     if(!S.compassByDate[s.date]) S.compassByDate[s.date] = [];
@@ -1710,7 +1712,8 @@ function rebuildCompassByPol(){
     S.purchaseTotalHon = 0;
     S.purchaseDetails.forEach(d => {
       // POL 필터
-      // POL固定廃止: 全件表示
+      // TOKYO+YOKOHAMA만 표시
+      if(d.cr49f_loading_port !== '東京' && d.cr49f_loading_port !== '横浜') return false;
       const pk = d._packer_name;
       const hon = d.cr49f_count || 0;
       if(!S.purchaseByPacker[pk]) S.purchaseByPacker[pk] = {total:0, details:[]};

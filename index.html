@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v3.4</title>
+<title>LEENAI ドレースケジュール管理 v3.5</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -293,7 +293,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v3.4</div>
+  <div class="header-ver">v3.5</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -786,7 +786,7 @@ async function loadFromDataverse(){
   showLoading('データ読込中...');
   try {
     // 仮押さえ規則
-    const rr = await dvGet(`leenai_b05_drayrules?$select=leenai_b05_drayruleid,leenai_truck,leenai_rule,leenai_timezone,leenai_hon,leenai_timerange,leenai_pol,leenai_active,leenai_label&$top=200`);
+    const rr = await dvGet(`leenai_b05_drayrules?$select=leenai_b05_drayruleid,leenai_truck,leenai_rule,leenai_timezone,leenai_hon,leenai_timerange,leenai_pol,leenai_active&$top=200`);
     S.kariRules = (rr.value||[]).map(r=>({
       id:        r.leenai_b05_drayruleid,
       truck:     r.leenai_truck     || '',
@@ -796,7 +796,7 @@ async function loadFromDataverse(){
       timerange: r.leenai_timerange || '',
       pol:       r.leenai_pol       || 'TOKYO',
       active:    r.leenai_active    !== false,
-      label:     r.leenai_label     || '',
+      label:     r.leenai_truck     || '',
       _dvId:     r.leenai_b05_drayruleid,
     }));
 

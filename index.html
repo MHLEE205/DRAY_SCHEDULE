@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v5.6</title>
+<title>LEENAI ドレースケジュール管理 v5.7</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -319,7 +319,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v5.6</div>
+  <div class="header-ver">v5.7</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -1950,7 +1950,7 @@ function renderPurchasePanel(){
 
         const gradeRows = Object.entries(byGrade)
           .sort((a,b) => a[0].localeCompare(b[0]))
-          .map(([gr, gds]) => {
+          .map(([gr, gds], grIdx) => {
             const contract = gds.reduce((s,d)=>s+(d.cr49f_count||0),0);
             const ck = `${pol}|${shortName}|${gr}`;
             const compass = compassCount[ck]||0;
@@ -1983,8 +1983,8 @@ function renderPurchasePanel(){
               return cnoRows;
             }).join('');
 
-            // plantId: pol+packer인덱스+grade 조합으로 고유하게
-            const plantId = `${cardId}_gr_${gr.replace(/[^a-zA-Z0-9]/g,'_')}`;
+            // plantId: pol+packer인덱스+gradeIndex로 완전 고유하게
+            const plantId = `${cardId}_gr${grIdx}`;
             return `<div class="pr-grade-block">
               <div class="pr-grade-row" onclick="togglePkCard('${plantId}')">
                 <span class="pr-grade">${escH(gr)}</span>

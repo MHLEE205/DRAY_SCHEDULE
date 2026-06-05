@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v4.8</title>
+<title>LEENAI ドレースケジュール管理 v4.9</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -168,6 +168,8 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 
 /* Existing schedules in modal */
 .existing-list{display:flex;flex-direction:column;gap:6px;margin-bottom:4px;}
+.ei-compass-ok{border-left:3px solid var(--ok);}
+.ei-compass-ng{border-left:3px solid var(--danger);}
 .existing-item{background:var(--surface2);border-radius:8px;padding:10px 12px;display:flex;align-items:center;gap:10px;border-left:3px solid;}
 .existing-item.confirmed{border-left-color:var(--ok);}
 .existing-item.review{border-left-color:var(--warn);}
@@ -293,7 +295,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v4.8</div>
+  <div class="header-ver">v4.9</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -2005,17 +2007,31 @@ function buildCellHTML(date, ds, slots, dayScheds, fulfillment, compassDay){
   const usedSchedIdx = new Set(); // 매칭된 B-05 스케줄 인덱스 추적
   const mergedItems = []; // {type:'both'|'compass'|'b05', compass?, sched?}
 
-  // COMPASS 기준으로 매칭
+  // 시간 정규화 함수 (フリー ↔ '' 동일 처리)
+  const normTime = t => (!t || t === 'フリー') ? '' : t.trim();
+
+  // COMPASS 기준으로 매칭 (날짜+드레이+시간 精密マッチ)
   const compassSorted = [...compassDay].sort((a,b) => {
     if(!a.time) return 1; if(!b.time) return -1;
     return a.time < b.time ? -1 : 1;
   });
   compassSorted.forEach(c => {
-    // 같은 날+드레이+POL에서 아직 매칭 안 된 B-05 스케줄 찾기
-    const schedIdx = dayScheds.findIndex((s,i) =>
+    const cTime = normTime(c.time);
+    // STEP1: 날짜+드레이+시간 완전 일치
+    let schedIdx = dayScheds.findIndex((s,i) =>
       !usedSchedIdx.has(i) &&
-      s.truck === c.drayShort
+      s.truck === c.drayShort &&
+      normTime(s.leenai_scheduletime||s.time) === cTime
     );
+    // STEP2: 시간 불일치시 드레이만으로 폴백 (단, 해당 드레이가 1건뿐일 때)
+    if(schedIdx < 0){
+      const candidates = dayScheds.filter((s,i) =>
+        !usedSchedIdx.has(i) && s.truck === c.drayShort
+      );
+      if(candidates.length === 1){
+        schedIdx = dayScheds.indexOf(candidates[0]);
+      }
+    }
     if(schedIdx >= 0){
       usedSchedIdx.add(schedIdx);
       mergedItems.push({type:'both', compass:c, sched:dayScheds[schedIdx]});
@@ -2122,11 +2138,26 @@ function openSchedModal(ds, dateObj, addMode = false){
   if(dayScheds.length > 0){
     html += `<div class="form-section-label">登録済みスケジュール</div>
     <div class="existing-list">`;
+    const compassDay = S.compassByDate[ds] || [];
+    const normTime = t => (!t || t === 'フリー') ? '' : t.trim();
     dayScheds.forEach(s => {
       const itemLabel = s.leenai_cttype||s.cttype||'';
-      html += `<div class="existing-item ${s.status}">
+      const sTime = normTime(s.leenai_scheduletime||s.time);
+      // COMPASS 매칭 확인 (날짜+드레이+시간)
+      const compassMatch = compassDay.find(c =>
+        c.drayShort === s.truck &&
+        normTime(c.time) === sTime
+      ) || (compassDay.filter(c=>c.drayShort===s.truck).length===1
+        ? compassDay.find(c=>c.drayShort===s.truck)
+        : null);
+      const matchCls = compassMatch ? 'ei-compass-ok' : 'ei-compass-ng';
+      const matchBadge = compassMatch
+        ? `<span style="font-size:10px;color:var(--ok);margin-right:4px;">✓COMPASS</span>`
+        : `<span style="font-size:10px;color:var(--danger);margin-right:4px;">COMPASS未</span>`;
+      html += `<div class="existing-item ${s.status} ${matchCls}">
         <div class="ei-truck">${escH(s.truck)}</div>
         <div class="ei-info">${escH(s.packer||'')} ${escH(s.leenai_scheduletime||s.time||'')} ${escH(itemLabel)}</div>
+        ${matchBadge}
         <span class="ei-status status-${s.status}">${statusLabel(s.status)}</span>
         <button class="icon-btn" title="編集" onclick="editSchedule('${s.id}')">✏️</button>
         <button class="icon-btn" title="削除" onclick="deleteSchedule('${s.id}')">🗑</button>

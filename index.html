@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v4.1</title>
+<title>LEENAI ドレースケジュール管理 v4.3</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -293,7 +293,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v4.1</div>
+  <div class="header-ver">v4.3</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -1557,47 +1557,29 @@ async function refreshCompass(saveToCache = false){
       await Promise.all(batch.map(async g => {
         try {
           const r = await dvGet(
-            `cr49f_bookings(${g})?$select=_cr49f_region_japan_id_value,cr49f_booking_no,cr49f_main_ship_name,_crcf9_carrier_id_value,_cr49f_region_id_value`
+            `cr49f_bookings(${g})?$select=cr49f_booking_no,cr49f_main_ship_name` +
+            `&$expand=cr49f_carrier_id($select=crcf9_carrier),cr49f_region_japan_id($select=crcf9_pol),cr49f_region_id($select=cr49f_pod)`
           );
-          const rjGuid = (r['_cr49f_region_japan_id_value'] || '').toUpperCase();
           const gUp = g.toUpperCase();
-          bkgPolMap[gUp] = REGION_JAPAN_MAP[rjGuid] || '';
+          const pol = r['cr49f_region_japan_id']?.crcf9_pol || '';
+          // POL 문자열을 TOKYO/YOKOHAMA 코드로 변환
+          let polCode = '';
+          if(pol === 'TOKYO')     polCode = 'TOKYO';
+          else if(pol === 'YOKOHAMA') polCode = 'YOKOHAMA';
+          else if(pol)            polCode = pol; // 그 외 POL 그대로 사용
+          bkgPolMap[gUp] = polCode;
           bkgInfoMap[gUp] = {
-            bkgNo:  r.cr49f_booking_no        || '',
-            vessel: r.cr49f_main_ship_name     || '',
-            carrierGuid: (r['_crcf9_carrier_id_value'] || '').toUpperCase(),
-            podGuid:     (r['_cr49f_region_id_value']  || '').toUpperCase(),
-            carrier: '',
-            pod:     '',
+            bkgNo:   r.cr49f_booking_no    || '',
+            vessel:  r.cr49f_main_ship_name || '',
+            carrier: r['cr49f_carrier_id']?.crcf9_carrier || '',
+            pod:     r['cr49f_region_id']?.cr49f_pod     || '',
           };
         } catch(e){ console.warn('BKG取得エラー:', g, e.message); }
       }));
       await new Promise(r=>setTimeout(r,100));
     }
     console.log(`BKG取得完了: ${Object.keys(bkgPolMap).length}/${bkgGuids.length}件`);
-    // Carrier 명칭 취득
-    const carrierGuids = [...new Set(Object.values(bkgInfoMap).map(b=>b.carrierGuid).filter(Boolean))];
-    const carrierMap = {};
-    await Promise.all(carrierGuids.map(async g => {
-      try {
-        const r = await dvGet(`crcf9_carriers(${g})?$select=crcf9_carrier`);
-        carrierMap[g] = r.crcf9_carrier || '';
-      } catch(_){}
-    }));
-    // POD 명칭 취득
-    const podGuids = [...new Set(Object.values(bkgInfoMap).map(b=>b.podGuid).filter(Boolean))];
-    const podMap = {};
-    await Promise.all(podGuids.map(async g => {
-      try {
-        const r = await dvGet(`cr49f_regions(${g})?$select=cr49f_pod`);
-        podMap[g] = r.cr49f_pod || '';
-      } catch(_){}
-    }));
-    // bkgInfoMap에 carrier/pod 명칭 세팅
-    Object.values(bkgInfoMap).forEach(b => {
-      b.carrier = carrierMap[b.carrierGuid] || '';
-      b.pod     = podMap[b.podGuid]         || '';
-    });
+    // Carrier/POD 취득은 별도 구현 예정
 
     // POL 필터는 rebuildCompassByPol()에서 처리 — ここでは全件保存
     // (POL 전환 시 API 재호출 없이 즉시 반영하기 위해)
@@ -1654,9 +1636,9 @@ async function refreshCompass(saveToCache = false){
         pol:        bkgPolMap[bkgGuid] || '',
         bkgGuid:    bkgGuid,
         bkgNo:      bkgInfo.bkgNo  || '',
-        vessel:     bkgInfo.vessel || '',
-        carrier:    bkgInfo.carrier|| '',
-        pod:        bkgInfo.pod    || '',
+        vessel:     bkgInfo.vessel  || '',
+        carrier:    bkgInfo.carrier || '',
+        pod:        bkgInfo.pod     || '',
         isCyDirect,
       };
     });

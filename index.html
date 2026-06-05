@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v3.7</title>
+<title>LEENAI ドレースケジュール管理 v3.8</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -293,7 +293,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v3.7</div>
+  <div class="header-ver">v3.8</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -475,8 +475,9 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
         <div id="importProgress" style="height:100%;background:var(--accent);width:0%;transition:width .3s;"></div>
       </div>
       <div id="importStatus" style="font-size:12px;color:var(--accent);min-height:18px;"></div>
-      <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;">
         <button class="btn btn-ghost" onclick="closeImportModal()">閉じる</button>
+        <button class="btn btn-ghost" id="importDelBtn" style="border-color:#f87171;color:#f87171;" onclick="runBulkDelete()">🗑 全件削除</button>
         <button class="btn btn-primary" id="importRunBtn" onclick="runBulkImport()">🚀 一括登録 実行</button>
       </div>
     </div>
@@ -1544,17 +1545,52 @@ async function refreshCompass(saveToCache = false){
     );
     const ciRows = ciData.value || [];
 
-    // BKG → POL 일괄 취득 (cr49f_booking의 _cr49f_region_japan_id_value)
-    showLoading('POL情報取得中...');
+    // BKG → POL + BKG No + Vessel + Carrier + POD 일괄 취득
+    showLoading('BKG情報取得中...');
     const bkgGuids = [...new Set(ciRows.map(r => r['_crcf9_booking_id_value']).filter(Boolean))];
-    const bkgPolMap = {}; // bkgGuid → polCode
+    const bkgPolMap = {};   // bkgGuid → polCode
+    const bkgInfoMap = {};  // bkgGuid → {bkgNo, vessel, carrier, pod}
     await Promise.all(bkgGuids.map(async g => {
       try {
-        const r = await dvGet(`cr49f_bookings(${g})?$select=_cr49f_region_japan_id_value`);
+        const r = await dvGet(
+          `cr49f_bookings(${g})?$select=_cr49f_region_japan_id_value,cr49f_booking_no,cr49f_main_ship_name,_crcf9_carrier_id_value,_cr49f_region_id_value`
+        );
         const rjGuid = (r['_cr49f_region_japan_id_value'] || '').toUpperCase();
-        bkgPolMap[g.toUpperCase()] = REGION_JAPAN_MAP[rjGuid] || '';
+        const gUp = g.toUpperCase();
+        bkgPolMap[gUp] = REGION_JAPAN_MAP[rjGuid] || '';
+        bkgInfoMap[gUp] = {
+          bkgNo:  r.cr49f_booking_no        || '',
+          vessel: r.cr49f_main_ship_name     || '',
+          carrierGuid: (r['_crcf9_carrier_id_value'] || '').toUpperCase(),
+          podGuid:     (r['_cr49f_region_id_value']  || '').toUpperCase(),
+          carrier: '',
+          pod:     '',
+        };
       } catch(_){}
     }));
+    // Carrier 명칭 취득
+    const carrierGuids = [...new Set(Object.values(bkgInfoMap).map(b=>b.carrierGuid).filter(Boolean))];
+    const carrierMap = {};
+    await Promise.all(carrierGuids.map(async g => {
+      try {
+        const r = await dvGet(`crcf9_carriers(${g})?$select=crcf9_carrier`);
+        carrierMap[g] = r.crcf9_carrier || '';
+      } catch(_){}
+    }));
+    // POD 명칭 취득
+    const podGuids = [...new Set(Object.values(bkgInfoMap).map(b=>b.podGuid).filter(Boolean))];
+    const podMap = {};
+    await Promise.all(podGuids.map(async g => {
+      try {
+        const r = await dvGet(`cr49f_regions(${g})?$select=cr49f_pod`);
+        podMap[g] = r.cr49f_pod || '';
+      } catch(_){}
+    }));
+    // bkgInfoMap에 carrier/pod 명칭 세팅
+    Object.values(bkgInfoMap).forEach(b => {
+      b.carrier = carrierMap[b.carrierGuid] || '';
+      b.pod     = podMap[b.podGuid]         || '';
+    });
 
     // POL 필터는 rebuildCompassByPol()에서 처리 — ここでは全件保存
     // (POL 전환 시 API 재호출 없이 즉시 반영하기 위해)
@@ -1595,6 +1631,7 @@ async function refreshCompass(saveToCache = false){
       const plantInfo = plantMap[plantGuid] || {};
       const itemInfo  = ciItemMap[itemGuid] || {};
       const isCyDirect = !drayGuid || !dray;
+      const bkgInfo = bkgInfoMap[bkgGuid] || {};
       return {
         id:         r.crcf9_container_informationid,
         date:       dateStr,
@@ -1608,6 +1645,11 @@ async function refreshCompass(saveToCache = false){
         itemCode:   itemInfo.code || '',
         itemJa:     itemInfo.ja  || '',
         pol:        bkgPolMap[bkgGuid] || '',
+        bkgGuid:    bkgGuid,
+        bkgNo:      bkgInfo.bkgNo  || '',
+        vessel:     bkgInfo.vessel || '',
+        carrier:    bkgInfo.carrier|| '',
+        pod:        bkgInfo.pod    || '',
         isCyDirect,
       };
     });
@@ -2372,29 +2414,106 @@ async function runBulkImport(){
   }
   const btn = document.getElementById('importRunBtn');
   btn.disabled = true;
-  const total = IMPORT_RECORDS.length;
-  let ok = 0, fail = 0;
   const bar = document.getElementById('importProgress');
   const status = document.getElementById('importStatus');
+
+  // COMPASS未ロードの場合は先にロード
+  if(!S.compassSchedules || S.compassSchedules.length === 0){
+    status.textContent = 'COMPASS情報取得中...';
+    await refreshCompass();
+  }
+
+  // COMPASS データを 日付+ドレー でインデックス化
+  // 同日同ドレー複数の場合: 配列で保持し順番にマッチ
+  const compassIdx = {}; // 'date_drayShort' → [compassSched, ...]
+  (S.compassSchedules || []).forEach(cs => {
+    if(!cs.drayShort) return;
+    const key = `${cs.date}_${cs.drayShort}`;
+    if(!compassIdx[key]) compassIdx[key] = [];
+    compassIdx[key].push(cs);
+  });
+  const usedCompass = new Set(); // 使用済みcompass id
+
+  const total = IMPORT_RECORDS.length;
+  let ok = 0, fail = 0, matched = 0;
   const BATCH = 5;
+
   for(let i = 0; i < total; i += BATCH){
     const batch = IMPORT_RECORDS.slice(i, i+BATCH);
     await Promise.all(batch.map(async rec => {
       try {
+        // COMPASS マッチング: 日付+ドレー
+        const truckShort = rec.leenai_truck; // 池谷/IT/国際/山勝/日正/IS
+        const key = `${rec.leenai_scheddate.slice(0,10)}_${truckShort}`;
+        const candidates = (compassIdx[key] || []).filter(c => !usedCompass.has(c.id));
+        const cs = candidates[0] || null;
+        if(cs){
+          usedCompass.add(cs.id);
+          matched++;
+          rec.leenai_pol     = cs.pol     || rec.leenai_pol || '';
+          rec.leenai_bkgno   = cs.bkgNo   || '';
+          rec.leenai_vessel  = cs.vessel   || '';
+          rec.leenai_carrier = cs.carrier  || '';
+          rec.leenai_pod     = cs.pod      || '';
+        }
         await dvPost('leenai_b05_drayschedules', rec);
         ok++;
       } catch(e){ fail++; console.error(rec.leenai_name, e); }
     }));
     const pct = Math.round((i+BATCH)/total*100);
     bar.style.width = Math.min(100,pct)+'%';
-    status.textContent = `${Math.min(i+BATCH,total)}/${total}件処理中...`;
+    status.textContent = `${Math.min(i+BATCH,total)}/${total}件処理中... (COMPASS一致:${matched}件)`;
     await new Promise(r=>setTimeout(r,150));
   }
-  status.textContent = `完了: 成功${ok}件 / 失敗${fail}件`;
+  status.textContent = `完了: ✅${ok}件 ❌${fail}件 / COMPASSマッチ:${matched}件`;
   bar.style.width = '100%';
   btn.disabled = false;
-  toast(`一括登録完了: ✅${ok}件 ❌${fail}件`, ok>0?'ok':'err');
+  toast(`一括登録完了: ✅${ok}件 ❌${fail}件 COMPASSマッチ:${matched}件`, ok>0?'ok':'err');
   if(ok>0) await loadFromDataverse();
+}
+
+// 일괄 삭제
+async function runBulkDelete(){
+  if(!S.accessToken || Date.now() > S.tokenExpiry){
+    toast('COMPASSログインが必要です', 'err'); return;
+  }
+  if(!confirm('leenai_b05_drayschedule の全データを削除します。よろしいですか？')) return;
+  const btn = document.getElementById('importDelBtn');
+  btn.disabled = true;
+  const bar = document.getElementById('importProgress');
+  const status = document.getElementById('importStatus');
+  status.textContent = '全件取得中...';
+  try {
+    // 全件取得 (最大2000件)
+    const res = await dvGet(`leenai_b05_drayschedules?$select=leenai_b05_drayschedidid,leenai_name&$top=2000`);
+    const all = res.value || [];
+    const total = all.length;
+    if(total === 0){ status.textContent = '削除対象データなし'; btn.disabled=false; return; }
+    status.textContent = `${total}件削除中...`;
+    let ok=0, fail=0;
+    const BATCH = 5;
+    for(let i=0; i<total; i+=BATCH){
+      const batch = all.slice(i, i+BATCH);
+      await Promise.all(batch.map(async r => {
+        const pkKey = Object.keys(r).find(k => k.startsWith('leenai_b05_') && k.endsWith('id') && k !== 'leenai_b05_drayschedidid') 
+                   || 'leenai_b05_drayschedidid';
+        const id = r[pkKey] || r['leenai_b05_drayschedidid'];
+        if(!id){ fail++; return; }
+        try { await dvDelete('leenai_b05_drayschedules', id); ok++; }
+        catch(e){ fail++; console.error(id, e); }
+      }));
+      bar.style.width = Math.min(100, Math.round((i+BATCH)/total*100))+'%';
+      status.textContent = `${Math.min(i+BATCH,total)}/${total}件削除中...`;
+      await new Promise(r=>setTimeout(r,150));
+    }
+    status.textContent = `削除完了: ✅${ok}件 ❌${fail}件`;
+    btn.disabled = false;
+    toast(`一括削除完了: ✅${ok}件 ❌${fail}件`, ok>0?'ok':'err');
+    if(ok>0) await loadFromDataverse();
+  } catch(e){
+    status.textContent = `エラー: ${e.message}`;
+    btn.disabled = false;
+  }
 }
 
 // ══════════════════════════════════════════

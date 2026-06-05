@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v4.4</title>
+<title>LEENAI ドレースケジュール管理 v4.5</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -126,7 +126,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 .badge-ng{background:rgba(245,158,11,.9);color:#000;}
 
 /* 仮押さえ 섹션 */
-.kari-section{padding:3px 5px;}
+.kari-section{padding:4px 6px;background:rgba(255,200,0,0.08);border-left:2px solid var(--accent2);border-radius:4px;margin-bottom:3px;}
 .kari-label{font-size:10px;color:var(--text3);margin-bottom:2px;font-weight:600;}
 .kari-slots{display:flex;gap:2px;flex-wrap:wrap;}
 .kari-slot{font-size:11px;padding:1px 5px;border-radius:4px;font-weight:700;border:1px solid;}
@@ -293,7 +293,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v4.4</div>
+  <div class="header-ver">v4.5</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -310,11 +310,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
     <button class="month-btn" onclick="changeMonth(1)">›</button>
   </div>
   <div class="ctrl-sep"></div>
-  <select class="pol-select" id="polSelect" onchange="render()">
-    <option value="TOKYO+YOKOHAMA">TOKYO+YOKOHAMA</option>
-    <option value="TOKYO">TOKYO</option>
-    <option value="YOKOHAMA">YOKOHAMA</option>
-  </select>
+  <!-- POL フィルタ廃止: 常にTOKYO+YOKOHAMA表示 -->
   <select class="dray-select" id="drayFilter" onchange="render()">
     <option value="">全ドレー</option>
     <option value="池谷">池谷</option>
@@ -1489,8 +1485,7 @@ async function refreshCompass(saveToCache = false){
         // 港渡し は TKK / KANEKO のみ表示 (他の港渡しPACKERは除外)
         if(d.cr49f_incoterms === '港' && !MINATO_PACKER_GUIDS.has(d._packer_guid)) return false;
         // POL 단일 선택 시 클라이언트 필터
-        if(S.pol === 'TOKYO')     return d.cr49f_loading_port === '東京';
-        if(S.pol === 'YOKOHAMA')  return d.cr49f_loading_port === '横浜';
+        // POL固定廃止: 全件表示
         return true; // TOKYO+YOKOHAMA
       });
 
@@ -1697,7 +1692,7 @@ function rebuildCompassByPol(){
     : new Set([S.pol]);
 
   // COMPASS 확정 재필터
-  const filtered = (S.compassSchedules||[]).filter(s => polSet.has(s.pol));
+  const filtered = (S.compassSchedules||[]); // POL固定廃止: 全件表示
   S.compassByDate = {};
   filtered.forEach(s => {
     if(!S.compassByDate[s.date]) S.compassByDate[s.date] = [];
@@ -1715,8 +1710,7 @@ function rebuildCompassByPol(){
     S.purchaseTotalHon = 0;
     S.purchaseDetails.forEach(d => {
       // POL 필터
-      if(S.pol === 'TOKYO'    && d.cr49f_loading_port !== '東京') return;
-      if(S.pol === 'YOKOHAMA' && d.cr49f_loading_port !== '横浜') return;
+      // POL固定廃止: 全件表示
       const pk = d._packer_name;
       const hon = d.cr49f_count || 0;
       if(!S.purchaseByPacker[pk]) S.purchaseByPacker[pk] = {total:0, details:[]};
@@ -1729,7 +1723,7 @@ function rebuildCompassByPol(){
 }
 
 function render(){
-  S.pol = document.getElementById('polSelect').value;
+  S.pol = 'TOKYO+YOKOHAMA'; // 常にTOKYO+YOKOHAMA固定
   S.drayFilter   = document.getElementById('drayFilter')?.value   || '';
   S.packerFilter = document.getElementById('packerFilter')?.value || '';
   const ml = `${S.currentYear}年${S.currentMonth}月`;
@@ -1748,7 +1742,7 @@ function renderSummary(){
   // COMPASS 확정 데이터 기반 드레이 전체 + 仮押さえ 등록 드레이 합산
   const truckList = Object.entries(S.compassByTruck||{})
     .sort((a,b) => b[1]-a[1]).map(([t])=>t);
-  const kariPol = S.pol === 'TOKYO+YOKOHAMA' ? null : S.pol;
+  const kariPol = null; // POL固定廃止
   const kariTrucks = [...new Set(S.kariRules
     .filter(r => !kariPol || r.pol === kariPol)
     .map(r=>r.truck))];
@@ -2000,8 +1994,7 @@ function buildCellHTML(date, ds, slots, dayScheds, fulfillment, compassDay){
     // 같은 날+드레이+POL에서 아직 매칭 안 된 B-05 스케줄 찾기
     const schedIdx = dayScheds.findIndex((s,i) =>
       !usedSchedIdx.has(i) &&
-      s.truck === c.drayShort &&
-      (s.leenai_pol||s.pol||'') === c.pol
+      s.truck === c.drayShort
     );
     if(schedIdx >= 0){
       usedSchedIdx.add(schedIdx);
@@ -2060,7 +2053,7 @@ function buildKariSlot(slot, ds){
 }
 
 function getKariSlots(ds, dow){
-  const activeRules = S.kariRules.filter(r => r.pol === S.pol && r.active && (
+  const activeRules = S.kariRules.filter(r => r.active && (
     (r.rule === 'weekday' && dow >= 1 && dow <= 5) ||
     (r.rule === 'saturday' && dow === 6) ||
     (r.rule === 'daily')
@@ -2165,13 +2158,7 @@ function openSchedModal(ds, dateObj, addMode = false){
       <label class="form-label">本数</label>
       <input type="number" class="form-input" id="fHon" value="1" min="1" max="20">
     </div>
-    <div class="form-group">
-      <label class="form-label">POL</label>
-      <select class="form-select" id="fPol">
-        <option value="TOKYO">TOKYO</option>
-        <option value="YOKOHAMA">YOKOHAMA</option>
-      </select>
-    </div>
+
   </div>
   <div class="form-group full">
     <label class="form-label">ステータス</label>
@@ -2228,7 +2215,7 @@ async function saveSchedule(){
     bkgno: document.getElementById('fBkg').value,
     cycut: document.getElementById('fCycut').value,
     comment: document.getElementById('fComment').value,
-    pol: document.getElementById('fPol')?.value || S.pol,
+    pol: '', // POL固定廃止
     createdby: S.loggedInEmail,
   };
   S.schedules.push(sched);

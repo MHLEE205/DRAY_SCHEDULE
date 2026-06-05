@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v4.3</title>
+<title>LEENAI ドレースケジュール管理 v4.4</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -293,7 +293,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v4.3</div>
+  <div class="header-ver">v4.4</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -1982,54 +1982,69 @@ function buildCellHTML(date, ds, slots, dayScheds, fulfillment, compassDay){
     }
   }
 
-  // COMPASS 확정 스케줄 섹션
-  if(compassDay.length > 0){
-    html += `<div class="compass-section">
-      <div class="compass-label">🔵 COMPASS</div>`;
-    // 시간순 정렬
-    const sorted = [...compassDay].sort((a,b) => {
-      if(!a.time) return 1;
-      if(!b.time) return -1;
-      return a.time < b.time ? -1 : 1;
+  // ── COMPASS + B-05 통합 표시 ──
+  // 매칭 키: 날짜 + 드레이 + POL
+  // COMPASS에 있으면 COMPASS 기준으로 1건 표시 (B-05 정보 병합)
+  // B-05에만 있으면 별도 표시 (COMPASS未)
+  // COMPASS에만 있으면 별도 표시 (❗)
+
+  const usedSchedIdx = new Set(); // 매칭된 B-05 스케줄 인덱스 추적
+  const mergedItems = []; // {type:'both'|'compass'|'b05', compass?, sched?}
+
+  // COMPASS 기준으로 매칭
+  const compassSorted = [...compassDay].sort((a,b) => {
+    if(!a.time) return 1; if(!b.time) return -1;
+    return a.time < b.time ? -1 : 1;
+  });
+  compassSorted.forEach(c => {
+    // 같은 날+드레이+POL에서 아직 매칭 안 된 B-05 스케줄 찾기
+    const schedIdx = dayScheds.findIndex((s,i) =>
+      !usedSchedIdx.has(i) &&
+      s.truck === c.drayShort &&
+      (s.leenai_pol||s.pol||'') === c.pol
+    );
+    if(schedIdx >= 0){
+      usedSchedIdx.add(schedIdx);
+      mergedItems.push({type:'both', compass:c, sched:dayScheds[schedIdx]});
+    } else {
+      mergedItems.push({type:'compass', compass:c});
+    }
+  });
+  // B-05에만 있는 것 (COMPASS未)
+  dayScheds.forEach((s,i) => {
+    if(!usedSchedIdx.has(i)) mergedItems.push({type:'b05', sched:s});
+  });
+
+  // 렌더링
+  if(compassDay.length > 0 || dayScheds.length > 0){
+    html += `<div class="compass-section"><div class="compass-label">🔵 COMPASS</div>`;
+    const showItems = mergedItems.slice(0, 6);
+    showItems.forEach(item => {
+      if(item.type === 'both'){
+        const c = item.compass;
+        const s = item.sched;
+        const line = formatScheduleLine(c.packerCode, c.plant, c.drayShort, c.itemCode, c.itemJa, c.cttype, 1, c.time, c.isCyDirect);
+        html += `<div class="sched-item compass" style="font-size:12px;">${escH(line)}<span class="match-badge match-ok">✓</span></div>`;
+      } else if(item.type === 'compass'){
+        const c = item.compass;
+        const line = formatScheduleLine(c.packerCode, c.plant, c.drayShort, c.itemCode, c.itemJa, c.cttype, 1, c.time, c.isCyDirect);
+        html += `<div class="sched-item compass-ng" style="font-size:12px;">${escH(line)}<span class="match-badge match-ng">❗</span></div>`;
+      } else {
+        // B-05만 (COMPASS未)
+        const s = item.sched;
+        const pkShort = getPackerShort(s.packer||'');
+        const plShort = getPlantShort(s.packer||'');
+        const pkPl = plShort && plShort !== pkShort ? `${pkShort}(${plShort})` : pkShort;
+        const tm = s.leenai_scheduletime||s.time||'フリー';
+        html += `<div class="sched-item sched-only" style="font-size:12px;">${escH(pkPl||s.packer||'')}-${escH(s.truck||'')} ${escH(tm)}<span class="match-badge match-warn">COMPASS未</span></div>`;
+      }
     });
-    sorted.forEach(c => {
-      const firstItem = c.items?.[0] || {};
-      const line = formatScheduleLine(
-        c.packerCode, c.plant, c.drayShort,
-        c.itemCode, c.itemJa,
-        c.cttype, 1, c.time, c.isCyDirect
-      );
-      // 대조: 날짜 + 드레이 일치 여부
-      const matched = dayScheds.some(s => s.truck === c.drayShort);
-      const cls = matched ? 'compass' : 'compass-ng';
-      const matchBadge = matched
-        ? `<span class="match-badge match-ok">✓</span>`
-        : `<span class="match-badge match-ng">❗</span>`;
-      html += `<div class="sched-item ${cls}" style="font-size:12px;">${escH(line)}${matchBadge}</div>`;
-    });
+    if(mergedItems.length > 6) html += `<div style="font-size:9px;color:var(--text3);">+${mergedItems.length-6}件</div>`;
     html += `</div>`;
   }
 
-  // 스케줄표 섹션 (수동 등록분)
-  html += '<div class="sched-section">';
-  if(dayScheds.length > 0){
-    dayScheds.slice(0, 3).forEach(s => {
-      const compassMatched = compassDay.some(c => s.truck === c.drayShort);
-      const cls = compassMatched ? 'confirmed' : 'sched-only';
-      const badge2 = compassDay.length > 0 && !compassMatched
-        ? `<span class="match-badge match-warn">COMPASS未</span>`
-        : '';
-      // 스케줄표도 엑셀 형식으로 표시
-      const pkShort = getPackerShort(s.packer || '');
-      const plShort = getPlantShort(s.packer || '');
-      const pkPl = plShort && plShort !== pkShort ? `${pkShort}(${plShort})` : pkShort;
-      const tm = s.time || 'フリー';
-      html += `<div class="sched-item ${cls}" style="font-size:12px;">${escH(pkPl||s.packer||'')}-${escH(s.truck)} ${escH(tm)}${badge2}</div>`;
-    });
-    if(dayScheds.length > 3) html += `<div style="font-size:9px;color:var(--text3);">+${dayScheds.length-3}件</div>`;
-  }
-  html += `<div class="sched-add" onclick="event.stopPropagation();openSchedModal('${ds}',null,true)">＋ 追加</div>`;
-  html += '</div>';
+  // 追加 버튼
+  html += `<div class="sched-section"><div class="sched-add" onclick="event.stopPropagation();openSchedModal('${ds}',null,true)">＋ 追加</div></div>`;
 
   return html;
 }

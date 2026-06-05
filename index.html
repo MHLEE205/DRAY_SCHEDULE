@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v5.0</title>
+<title>LEENAI ドレースケジュール管理 v5.1</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -99,10 +99,10 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 
 /* ══ Calendar ══ */
 .calendar-wrap{padding:8px 0;}
-.cal-header{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:3px;}
+.cal-header{display:grid;grid-template-columns:repeat(6,1fr) 0.3fr;gap:3px;margin-bottom:3px;}
 .cal-dow{text-align:center;font-size:10px;font-weight:700;color:var(--text3);padding:3px 0;}
 .cal-dow.sat{color:var(--info);}.cal-dow.sun{color:var(--danger);}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.cal-grid{display:grid;grid-template-columns:repeat(6,1fr) 0.3fr;gap:3px;}
 
 /* ══ Calendar Cell ══ */
 .cal-cell{background:var(--surface);border:1px solid var(--border);border-radius:6px;min-height:100px;cursor:pointer;transition:border-color .15s;overflow:hidden;display:flex;flex-direction:column;}
@@ -111,6 +111,8 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 .cal-cell.today .cell-header{background:rgba(79,142,247,.15);}
 .cal-cell.sat .cell-dow{color:var(--info);}
 .cal-cell.sun .cell-dow{color:var(--danger);}
+.cal-cell.sun{overflow:hidden;}
+.cal-cell.sun .compass-section,.cal-cell.sun .sched-section,.cal-cell.sun .kari-section,.cal-cell.sun .sched-add{display:none;}
 
 /* 충족 상태 */
 .cal-cell.all-ok{border-color:var(--border);}
@@ -272,6 +274,24 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 .sc-select{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;}
 .sc-alert{background:rgba(245,158,11,.1);border:1px solid var(--warn);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--warn);margin-top:10px;}
 .sc-company-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden;}
+/* 新購買パネル */
+.pr-contract{border-top:1px solid var(--border);margin:0;}
+.pr-contract-header{display:flex;align-items:center;gap:6px;padding:5px 10px;cursor:pointer;font-size:11px;background:var(--surface2);}
+.pr-contract-header:hover{background:var(--surface3);}
+.pr-cno{font-weight:700;color:var(--accent);flex:1;font-size:11px;}
+.pr-nums-mini{font-size:10px;color:var(--text2);white-space:nowrap;}
+.pr-rem-warn{color:var(--warn);font-weight:700;}
+.pr-chev{font-size:10px;color:var(--text3);transition:.2s;}
+.pr-grade-list{padding:4px 10px 6px;display:block;}
+.pr-grade-list.closed{display:none;}
+.pr-grade-header{display:grid;grid-template-columns:1.5fr repeat(4,1fr);font-size:9px;color:var(--text3);padding:2px 0;border-bottom:1px solid var(--border);margin-bottom:2px;text-align:right;}
+.pr-grade-header span:first-child{text-align:left;}
+.pr-grade-row{display:grid;grid-template-columns:1.5fr repeat(4,1fr);font-size:11px;padding:2px 0;align-items:center;}
+.pr-grade{font-weight:700;color:var(--text);}
+.pr-num{text-align:right;color:var(--text2);}
+.pr-num.ok{color:var(--ok);}
+.pr-num.info{color:var(--info);}
+.pr-num.warn{color:var(--warn);font-weight:700;}
 .sc-company-header{padding:10px 16px;display:flex;align-items:center;gap:10px;cursor:pointer;background:var(--surface2);}
 .sc-company-header:hover{background:var(--surface3);}
 .sc-company-name{font-size:13px;font-weight:700;flex:1;}
@@ -295,7 +315,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v5.0</div>
+  <div class="header-ver">v5.1</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -343,6 +363,9 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
     <option value="JOOP">S — SOP</option>
     <option value="JONP">N — 新聞</option>
     <option value="JOCP">B — 台紙</option>
+  </select>
+  <select class="dray-select" id="bkgFilter" onchange="render()" style="min-width:140px;">
+    <option value="">全BKG</option>
   </select>
   <div class="ctrl-sep"></div>
   <button class="btn btn-ghost btn-sm" id="refreshBtn" onclick="refreshCompass()">🔄 COMPASS</button>
@@ -597,7 +620,8 @@ const S = {
   pol: 'TOKYO',
   drayFilter:   '',   // 드레이 필터
   packerFilter: '',
-  itemFilter:   '',   // Packer 필터
+  itemFilter:   '',
+  bkgFilter:    '',   // Packer 필터
   // B-05 데이터 (Dataverse 연결 전 mock)
   kariRules: [],        // 仮押さえ 규칙
   kariExceptions: [],   // 날짜별 예외
@@ -1489,15 +1513,10 @@ async function refreshCompass(saveToCache = false){
         };
       })
       .filter(d => {
-        // latest_vanning が해당월인 것만
-        if(!d._latest_vanning) return false;
-        const van = d._latest_vanning.slice(0,10);
-        if(!(van >= fromDate && van <= toDate)) return false;
-        // 港渡し は TKK / KANEKO のみ表示 (他の港渡しPACKERは除外)
+        // 港渡し は TKK / KANEKO のみ表示
         if(d.cr49f_incoterms === '港' && !MINATO_PACKER_GUIDS.has(d._packer_guid)) return false;
-        // POL 단일 선택 시 클라이언트 필터
         // TOKYO+YOKOHAMA만 표시
-      if(d.cr49f_loading_port !== '東京' && d.cr49f_loading_port !== '横浜') return false;
+        if(d.cr49f_loading_port !== '東京' && d.cr49f_loading_port !== '横浜') return false;
         return true; // TOKYO+YOKOHAMA
       });
 
@@ -1717,6 +1736,19 @@ function rebuildCompassByPol(){
     if(s.drayShort) S.compassByTruck[s.drayShort] = (S.compassByTruck[s.drayShort]||0) + 1;
   });
 
+  // BKG 드롭다운 업데이트
+  const bkgSel = document.getElementById('bkgFilter');
+  if(bkgSel){
+    const currentVal = bkgSel.value;
+    const bkgNos = [...new Set(
+      (S.compassSchedules||[])
+        .filter(c => c.bkgNo && (c.pol === 'TOKYO' || c.pol === 'YOKOHAMA'))
+        .map(c => c.bkgNo)
+    )].sort();
+    bkgSel.innerHTML = '<option value="">全BKG</option>' +
+      bkgNos.map(b => `<option value="${b}"${b===currentVal?' selected':''}>${b}</option>`).join('');
+  }
+
   // 구매계약 잔량 재집계 (POL 필터 적용)
   if(S.purchaseDetails?.length){
     S.purchaseByPacker = {};
@@ -1741,6 +1773,7 @@ function render(){
   S.drayFilter   = document.getElementById('drayFilter')?.value   || '';
   S.packerFilter = document.getElementById('packerFilter')?.value || '';
   S.itemFilter   = document.getElementById('itemFilter')?.value   || '';
+  S.bkgFilter    = document.getElementById('bkgFilter')?.value    || '';
   const ml = `${S.currentYear}年${S.currentMonth}月`;
   document.getElementById('monthLabel').textContent = ml;
   rebuildCompassByPol(); // POL 변경 반영
@@ -1789,6 +1822,14 @@ function renderSummary(){
   renderPurchasePanel();
 }
 
+// Grade 코드 → 약칭
+const GRADE_SHORT = {
+  'JOCC':'C','JOMG':'M','JOOP':'S','JBBC':'B','JOCP':'B',
+  'JONP':'N','JSOP':'S','SHREDDER':'シ','JOWP':'W',
+  'OCC':'C','OMG':'M','SOP':'S','BBC':'B','ONP':'N',
+};
+function gradeShort(code){ return GRADE_SHORT[code] || code || '—'; }
+
 function renderPurchasePanel(){
   const body = document.getElementById('purchaseBody');
   if(!body) return;
@@ -1797,70 +1838,145 @@ function renderPurchasePanel(){
     return;
   }
 
+  // COMPASS/B05 스케줄 → {date_dray_bkgGuid: count} 인덱스
+  const compassIdx = {}; // bkgGuid → CT count
+  (S.compassSchedules||[]).forEach(c => {
+    if(!c.bkgGuid) return;
+    compassIdx[c.bkgGuid] = (compassIdx[c.bkgGuid]||0) + 1;
+  });
+  const b05Idx = {}; // bkgNo → count
+  (S.schedules||[]).forEach(s => {
+    const bk = s.leenai_bkgno||s.bkgno||'';
+    if(!bk) return;
+    b05Idx[bk] = (b05Idx[bk]||0) + 1;
+  });
+
+  // Packer별 집계 (closing=false만, purchaseByPacker 기준)
   let html = '';
   Object.entries(S.purchaseByPacker)
     .sort((a,b) => b[1].total - a[1].total)
     .forEach(([pkName, data], idx) => {
-      // 표시용 이름 (패널에 보여주는 것)
       const displayName = pkName.replace('株式会社','').replace('有限会社','').replace('東京紙パルプ交易','TKK').trim();
-      // 필터키 = getPackerShort(pkName) → COMPASS packerCode와 동일한 약칭 체계
       const shortName = getPackerShort(pkName) || displayName;
-      const pct = S.compassTotal > 0 ? Math.min(100, Math.round(S.compassTotal * data.total / S.purchaseTotalHon)) : 0;
+      const cardId = 'pk_' + idx;
+      const isActive = S.packerFilter === shortName;
 
-      // Plant(備考)별 그룹
-      const byPlant = {};
+      // 계약번호별 그룹
+      const byContract = {};
       data.details.forEach(d => {
-        const plant = d.cr49f_remark?.trim() || '(本社)';
-        if(!byPlant[plant]) byPlant[plant] = {hon:0, items:[], contracts:[], price:null};
-        byPlant[plant].hon += (d.cr49f_count || 0);
-        if(d.cr49f_price && !byPlant[plant].price) byPlant[plant].price = d.cr49f_price;
-        // ITEM
-        const item = d._item_ja || '';
-        if(item && !byPlant[plant].items.includes(item)) byPlant[plant].items.push(item);
-        // 계약번호
-        if(d._contract_no && !byPlant[plant].contracts.includes(d._contract_no)) byPlant[plant].contracts.push(d._contract_no);
+        const cno = d._contract_no || '(不明)';
+        if(!byContract[cno]) byContract[cno] = {details:[], bkgGuid: d._bkg_guid||''};
+        byContract[cno].details.push(d);
       });
 
-      const plantRows = Object.entries(byPlant)
-        .sort((a,b) => b[1].hon - a[1].hon)
-        .map(([plant, info]) => {
-          const itemStr = info.items.length ? info.items.join('/') : '—';
-          const priceStr = info.price ? `¥${info.price}/kg` : '';
-          return `<div class="plant-row">
-            <span class="plant-name">${escH(plant)}</span>
-            <span class="plant-item">${escH(itemStr)}</span>
-            <span class="plant-count">${info.hon}本</span>
-            <span class="plant-price">${priceStr}</span>
+      // Packer 합계
+      let pkTotal=0, pkCompass=0, pkB05=0;
+      data.details.forEach(d => { pkTotal += d.cr49f_count||0; });
+
+      // 계약번호별 행 렌더
+      const contractRows = Object.entries(byContract)
+        .sort((a,b) => a[0].localeCompare(b[0]))
+        .map(([cno, cdata]) => {
+          // Grade별 그룹
+          const byGrade = {};
+          cdata.details.forEach(d => {
+            const gr = gradeShort(d._item_ja || d['_cr49f_item_id_value_formatted'] || '');
+            if(!byGrade[gr]) byGrade[gr] = {contract:0, compass:0, b05:0};
+            byGrade[gr].contract += d.cr49f_count||0;
+          });
+
+          // COMPASS/B05 수치 — bkgGuid 매핑 (COMPASS는 compassSchedules에서)
+          // 계약번호로 BKG 찾기 — compassSchedules의 bkgNo와 매칭
+          const matchedCompass = (S.compassSchedules||[]).filter(c => c.bkgNo && cdata.details.some(d => d._contract_no === cno));
+          // 간단히: 계약번호로 직접 BKG 매칭 어려우므로 전체 COMPASS 중 해당 Packer 건으로 근사
+          // → 나중에 BKG-계약 매핑 추가 예정, 우선 Packer+Grade 기준으로 집계
+          const compassByGrade = {};
+          (S.compassSchedules||[]).filter(c =>
+            (c.packerCode||'').toUpperCase() === (shortName||'').toUpperCase() ||
+            getPackerShort(c.packerCode||'') === shortName
+          ).forEach(c => {
+            const gr = gradeShort(c.itemCode||'');
+            compassByGrade[gr] = (compassByGrade[gr]||0) + 1;
+          });
+
+          const b05ByGrade = {};
+          (S.schedules||[]).filter(s => {
+            const sp = getPackerShort(s.packer||'');
+            return sp === shortName || (s.packer||'').includes(shortName);
+          }).forEach(s => {
+            const gr = gradeShort(s.leenai_cttype||s.cttype||'');
+            b05ByGrade[gr] = (b05ByGrade[gr]||0) + 1;
+          });
+
+          let cTotal=0, cCompass=0, cB05=0;
+          Object.values(byGrade).forEach(v=>cTotal+=v.contract);
+
+          const gradeRows = Object.entries(byGrade).map(([gr, gd]) => {
+            const comp = compassByGrade[gr]||0;
+            const b05  = b05ByGrade[gr]||0;
+            const rem  = Math.max(0, gd.contract - comp);
+            cCompass += comp; cB05 += b05;
+            pkCompass += comp; pkB05 += b05;
+            return `<div class="pr-grade-row">
+              <span class="pr-grade">${escH(gr)}</span>
+              <span class="pr-num" title="契約">${gd.contract}</span>
+              <span class="pr-num ok" title="COMPASS">${comp}</span>
+              <span class="pr-num info" title="入力">${b05}</span>
+              <span class="pr-num ${rem>0?'warn':''}" title="残">${rem}</span>
+            </div>`;
+          }).join('');
+
+          const cRem = Math.max(0, cTotal - cCompass);
+          return `<div class="pr-contract">
+            <div class="pr-contract-header" onclick="togglePkCard('prc_${cardId}_${cno.replace(/[^a-zA-Z0-9]/g,'_')}')">
+              <span class="pr-cno">${escH(cno)}</span>
+              <span class="pr-nums-mini">契${cTotal} 確${cCompass} 入${cB05} <span class="${cRem>0?'pr-rem-warn':''}">残${cRem}</span></span>
+              <span class="pr-chev" id="prc_${cardId}_${cno.replace(/[^a-zA-Z0-9]/g,'_')}_chev">›</span>
+            </div>
+            <div class="pr-grade-list" id="prc_${cardId}_${cno.replace(/[^a-zA-Z0-9]/g,'_')}">
+              <div class="pr-grade-header">
+                <span>Grade</span><span title="契約">契</span><span title="COMPASS">確</span><span title="入力">入</span><span title="残">残</span>
+              </div>
+              ${gradeRows}
+            </div>
           </div>`;
         }).join('');
 
-      const cardId = 'pk_' + idx;
-      const pkShort = shortName; // shortName 그대로 필터키로 사용
-      const isActive = S.packerFilter === pkShort;
+      const pkRem = Math.max(0, pkTotal - pkCompass);
+      const pct = pkTotal > 0 ? Math.min(100, Math.round(pkCompass / pkTotal * 100)) : 0;
+
       html += `
       <div class="pk-card">
         <div class="pk-card-header" style="cursor:pointer;"
-          onclick="togglePackerFilter('${cardId}','${pkShort}')"
+          onclick="togglePackerFilter('${cardId}','${shortName}')"
           title="クリックでカレンダーPacker絞込">
-          <div class="pk-name" style="${isActive?'color:var(--accent);':''}">${escH(displayName)}</div>
-          <div class="pk-total">${data.total}本</div>
+          <div class="pk-name" style="${isActive?'color:var(--accent);font-weight:900;':''}">
+            ${escH(displayName)}
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;font-size:10px;">
+            <span style="color:var(--text3);">契${pkTotal}</span>
+            <span style="color:var(--ok);">確${pkCompass}</span>
+            <span style="color:var(--info);">入${pkB05}</span>
+            <span style="color:${pkRem>0?'var(--warn)':'var(--text3)'};">残${pkRem}</span>
+          </div>
           <div class="pk-chevron open" id="${cardId}_chev">›</div>
         </div>
         <div class="pk-progress"><div class="pk-progress-fill" style="width:${pct}%;"></div></div>
         <div class="pk-body open" id="${cardId}">
-          ${plantRows}
+          ${contractRows}
         </div>
       </div>`;
     });
 
-  body.innerHTML = html;
+  body.innerHTML = html || '<div style="text-align:center;color:var(--text3);padding:10px;font-size:11px;">データなし</div>';
 }
 
 function togglePkCard(id){
   const body = document.getElementById(id);
   const chev = document.getElementById(id + '_chev');
-  body.classList.toggle('open');
-  chev.classList.toggle('open');
+  if(!body) return;
+  body.classList.toggle('closed');
+  if(chev) chev.style.transform = body.classList.contains('closed') ? 'rotate(-90deg)' : '';
 }
 
 function togglePackerFilter(cardId, pkShort){
@@ -1930,6 +2046,11 @@ function renderCalendar(){
       if(S.itemFilter){
         dayScheds  = dayScheds.filter(s => (s.leenai_cttype||s.cttype||'').startsWith(S.itemFilter.replace('JOCC','C').replace('JOMG','M').replace('JOOP','S').replace('JONP','N').replace('JOCP','B')) || (s.leenai_cttype||s.cttype||'') === S.itemFilter);
         compassDay = compassDay.filter(c => c.itemCode === S.itemFilter);
+      }
+      // BKG 필터
+      if(S.bkgFilter){
+        compassDay = compassDay.filter(c => c.bkgNo === S.bkgFilter);
+        dayScheds  = dayScheds.filter(s => (s.leenai_bkgno||s.bkgno||'') === S.bkgFilter);
       }
       // Packer 필터
       if(S.packerFilter){

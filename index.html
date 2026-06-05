@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v3.5</title>
+<title>LEENAI ドレースケジュール管理 v3.6</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -293,7 +293,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v3.5</div>
+  <div class="header-ver">v3.6</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -817,10 +817,14 @@ async function loadFromDataverse(){
     const lastDay = new Date(S.currentYear, S.currentMonth, 0).getDate();
     const fromD = `${yStr}-${mStr}-01T00:00:00Z`;
     const toD   = `${yStr}-${mStr}-${lastDay}T23:59:59Z`;
-    const rs = await dvGet(`leenai_b05_drayschedules?$filter=leenai_scheddate ge ${fromD} and leenai_scheddate le ${toD}&$select=leenai_b05_drayruleid,leenai_b05_drayschedule,leenai_b05_drayschedules,leenai_b05_draysid,leenai_name,leenai_truck,leenai_packer,leenai_scheduletime,leenai_cttype,leenai_hon,leenai_status,leenai_pol,leenai_bkgno,leenai_cycut,leenai_comment,leenai_createdby,leenai_scheddate&$top=500`);
-    S.schedules = (rs.value||[]).map(r=>({
-      id:      r.leenai_b05_draysid || r.leenai_b05_drayschedule || r['leenai_b05_drayschedules@odata.id'] || r['leenai_name'],
-      _dvId:   r.leenai_b05_draysid || r.leenai_b05_drayschedule,
+    const rs = await dvGet(`leenai_b05_drayschedules?$filter=leenai_scheddate ge ${fromD} and leenai_scheddate le ${toD}&$select=leenai_name,leenai_truck,leenai_packer,leenai_scheduletime,leenai_cttype,leenai_item_code,leenai_hon,leenai_status,leenai_pol,leenai_bkgno,leenai_comment,leenai_createdby,leenai_scheddate&$top=500`);
+    S.schedules = (rs.value||[]).map(r=>{
+      // PK 필드명 자동감지: leenai_b05_*id 패턴
+      const pkKey = Object.keys(r).find(k => k.startsWith('leenai_b05_') && k.endsWith('id')) || null;
+      const dvId  = pkKey ? r[pkKey] : null;
+      return {
+      id:      dvId || r.leenai_name,
+      _dvId:   dvId,
       date:    (r.leenai_scheddate||'').slice(0,10),
       truck:   r.leenai_truck      || '',
       packer:  r.leenai_packer     || '',
@@ -833,7 +837,7 @@ async function loadFromDataverse(){
       cycut:   r.leenai_cycut      || '',
       comment: r.leenai_comment    || '',
       createdby: r.leenai_createdby|| '',
-    }));
+    };});
 
     toast(`データ読込完了: 規則${S.kariRules.length}件 / 例外${S.kariExceptions.length}件 / スケジュール${S.schedules.length}件`, 'ok');
   } catch(e){

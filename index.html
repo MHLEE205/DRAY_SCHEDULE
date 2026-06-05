@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v3.2</title>
+<title>LEENAI ドレースケジュール管理 v3.3</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -293,7 +293,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v3.2</div>
+  <div class="header-ver">v3.3</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -341,6 +341,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
   <div class="ctrl-sep"></div>
   <button class="btn btn-ghost btn-sm" id="refreshBtn" onclick="refreshCompass()">🔄 COMPASS</button>
   <button class="btn btn-teal btn-sm" onclick="openMailModal()">📧 確定メール送付</button>
+  <button class="btn btn-ghost btn-sm" style="border-color:var(--accent2);" onclick="openImportModal()">📥 一括登録</button>
 </div>
 
 <!-- ══ Login Screen ══ -->
@@ -457,6 +458,31 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 </div>
 
 <!-- ══ Schedule Modal ══ -->
+<!-- ══ 一括登録 Modal ══ -->
+<div class="modal-overlay" id="importModal">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-header">
+      <div class="modal-title">📥 エクセル表 一括登録</div>
+      <button class="icon-btn" onclick="closeImportModal()">✕</button>
+    </div>
+    <div style="padding:20px;display:flex;flex-direction:column;gap:16px;">
+      <div style="font-size:13px;color:var(--text2);" id="importInfo">解析済みデータを読込中...</div>
+      <div style="font-size:12px;color:var(--text3);">
+        ※ leenai_b05_drayschedule テーブルに一括INSERT<br>
+        ※ 重複は上書きされません (name キーで判別)
+      </div>
+      <div style="background:var(--surface2);border-radius:6px;overflow:hidden;height:8px;">
+        <div id="importProgress" style="height:100%;background:var(--accent);width:0%;transition:width .3s;"></div>
+      </div>
+      <div id="importStatus" style="font-size:12px;color:var(--accent);min-height:18px;"></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button class="btn btn-ghost" onclick="closeImportModal()">閉じる</button>
+        <button class="btn btn-primary" id="importRunBtn" onclick="runBulkImport()">🚀 一括登録 実行</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="schedModal">
   <div class="modal">
     <div class="modal-header">
@@ -845,6 +871,7 @@ async function saveScheduleToDv(sched){
     leenai_packer:       sched.packer   || '',
     leenai_scheduletime: sched.time     || '',
     leenai_cttype:       sched.cttype   || '',
+    leenai_item_code:    sched.itemCode || '',
     leenai_hon:          sched.hon      || 1,
     leenai_status:       sched.status   || 'pending',
     leenai_pol:          sched.pol      || S.pol,
@@ -2053,7 +2080,10 @@ function openSchedModal(ds, dateObj, addMode = false){
     </div>
     <div class="form-group">
       <label class="form-label">到着時間</label>
-      <input type="time" class="form-input" id="fTime" value="08:00">
+      <select class="form-select" id="fTime">
+        <option value="フリー">フリー</option>
+        ${Array.from({length:18}, (_,i)=>i+4).flatMap(h=>['00','30'].map(m=>`<option value="${String(h).padStart(2,'0')}:${m}"${h===8&&m==='00'?' selected':''}>${String(h).padStart(2,'0')}:${m}</option>`)).join('')}
+      </select>
     </div>
   </div>
   <div class="form-group full">
@@ -2065,14 +2095,33 @@ function openSchedModal(ds, dateObj, addMode = false){
   </div>
   <div class="form-row">
     <div class="form-group">
+      <label class="form-label">品目 (ITEM)</label>
+      <select class="form-select" id="fItem">
+        <option value="JOCC">C — 段ボール</option>
+        <option value="JOMG">M — 雑誌</option>
+        <option value="JOOP">S — SOP</option>
+        <option value="JONP">N — 新聞</option>
+        <option value="JOCP">B — 台紙</option>
+      </select>
+    </div>
+    <div class="form-group">
       <label class="form-label">CT種別</label>
       <select class="form-select" id="fCttype">
         ${CT_TYPES.map(t => `<option value="${t}"${t==='40ft'?' selected':''}>${t}</option>`).join('')}
       </select>
     </div>
+  </div>
+  <div class="form-row">
     <div class="form-group">
       <label class="form-label">本数</label>
       <input type="number" class="form-input" id="fHon" value="1" min="1" max="20">
+    </div>
+    <div class="form-group">
+      <label class="form-label">POL</label>
+      <select class="form-select" id="fPol">
+        <option value="TOKYO">TOKYO</option>
+        <option value="YOKOHAMA">YOKOHAMA</option>
+      </select>
     </div>
   </div>
   <div class="form-group full">
@@ -2124,12 +2173,13 @@ async function saveSchedule(){
     time: document.getElementById('fTime').value,
     packer: document.getElementById('fPacker').value,
     cttype: document.getElementById('fCttype').value,
+    itemCode: document.getElementById('fItem').value,
     hon: parseInt(document.getElementById('fHon').value) || 1,
     status,
     bkgno: document.getElementById('fBkg').value,
     cycut: document.getElementById('fCycut').value,
     comment: document.getElementById('fComment').value,
-    pol: S.pol,
+    pol: document.getElementById('fPol')?.value || S.pol,
     createdby: S.loggedInEmail,
   };
   S.schedules.push(sched);
@@ -2295,6 +2345,53 @@ function addKariRule(){
 // ══════════════════════════════════════════
 function openMailModal(){
   toast('メール送付機能は近日実装予定です', 'info');
+}
+
+// ══════════════════════════════════════════
+// 엑셀 스케줄 일괄 등록 (leenai_b05_drayschedule)
+// ══════════════════════════════════════════
+const IMPORT_RECORDS = [{"leenai_name":"2026-05-07_池谷_06:00","leenai_scheddate":"2026-05-07T00:00:00Z","leenai_truck":"池谷","leenai_packer":"兼(横)","leenai_scheduletime":"06:00","leenai_cttype":"C1","leenai_item_code":"JOCC","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"YOKOHAMA","leenai_comment":"兼(横)-池谷 (C1)6:00 ①"},{"leenai_name":"2026-05-08_国際_06:00","leenai_scheddate":"2026-05-08T00:00:00Z","leenai_truck":"国際","leenai_packer":"兼(横)","leenai_scheduletime":"06:00","leenai_cttype":"C1","leenai_item_code":"JOCC","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"YOKOHAMA","leenai_comment":"兼(横)-国際 (C1)6:00"},{"leenai_name":"2026-05-09_池谷_06:00","leenai_scheddate":"2026-05-09T00:00:00Z","leenai_truck":"池谷","leenai_packer":"兼(横)","leenai_scheduletime":"06:00","leenai_cttype":"C1","leenai_item_code":"JOCC","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"YOKOHAMA","leenai_comment":"兼(横)-池谷 (C1)6:00 ①"},{"leenai_name":"2026-05-11_池谷_06:00","leenai_scheddate":"2026-05-11T00:00:00Z","leenai_truck":"池谷","leenai_packer":"兼(横)","leenai_scheduletime":"06:00","leenai_cttype":"C1","leenai_item_code":"JOCC","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"YOKOHAMA","leenai_comment":"兼(横)-池谷 (C1)6:00 ①"},{"leenai_name":"2026-05-12_池谷_06:00","leenai_scheddate":"2026-05-12T00:00:00Z","leenai_truck":"池谷","leenai_packer":"兼(横)","leenai_scheduletime":"06:00","leenai_cttype":"C1","leenai_item_code":"JOCC","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"YOKOHAMA","leenai_comment":"兼(横)-池谷 (C1)6:00 ①"},{"leenai_name":"2026-05-13_IT_06:00","leenai_scheddate":"2026-05-13T00:00:00Z","leenai_truck":"IT","leenai_packer":"兼(横)","leenai_scheduletime":"06:00","leenai_cttype":"C1","leenai_item_code":"JOCC","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"YOKOHAMA","leenai_comment":"兼(横)-IT (C1)6:00 ②"},{"leenai_name":"2026-05-14_国際_13:00","leenai_scheddate":"2026-05-14T00:00:00Z","leenai_truck":"国際","leenai_packer":"兼(埼)","leenai_scheduletime":"13:00","leenai_cttype":"M1","leenai_item_code":"JOMG","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"TOKYO","leenai_comment":"兼(埼)-国際 (M1)13:00"},{"leenai_name":"2026-05-15_国際_14:00","leenai_scheddate":"2026-05-15T00:00:00Z","leenai_truck":"国際","leenai_packer":"兼(船)","leenai_scheduletime":"14:00","leenai_cttype":"S1","leenai_item_code":"JOOP","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"YOKOHAMA","leenai_comment":"兼(船)-国際 (S1) 14:00"},{"leenai_name":"2026-05-16_池谷_06:00","leenai_scheddate":"2026-05-16T00:00:00Z","leenai_truck":"池谷","leenai_packer":"兼(横)","leenai_scheduletime":"06:00","leenai_cttype":"C1","leenai_item_code":"JOCC","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"YOKOHAMA","leenai_comment":"兼(横)-池谷 (C1)6:00 ①"},{"leenai_name":"2026-05-07_IT_06:30","leenai_scheddate":"2026-05-07T00:00:00Z","leenai_truck":"IT","leenai_packer":"兼(横)","leenai_scheduletime":"06:30","leenai_cttype":"C1","leenai_item_code":"JOCC","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"YOKOHAMA","leenai_comment":"兼(横)-IT (C1)6:30 ①"},{"leenai_name":"2026-05-08_国際_07:00","leenai_scheddate":"2026-05-08T00:00:00Z","leenai_truck":"国際","leenai_packer":"兼(湘)","leenai_scheduletime":"07:00","leenai_cttype":"C1","leenai_item_code":"JOCC","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"YOKOHAMA","leenai_comment":"兼(湘)-国際 (C1)7:00"},{"leenai_name":"2026-05-09_池谷_06:30","leenai_scheddate":"2026-05-09T00:00:00Z","leenai_truck":"池谷","leenai_packer":"兼(横)","leenai_scheduletime":"06:30","leenai_cttype":"C1","leenai_item_code":"JOCC","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"YOKOHAMA","leenai_comment":"兼(横)-池谷 (C1)6:30 ①"},{"leenai_name":"2026-05-11_国際_06:30","leenai_scheddate":"2026-05-11T00:00:00Z","leenai_truck":"国際","leenai_packer":"兼(横)","leenai_scheduletime":"06:30","leenai_cttype":"M1","leenai_item_code":"JOMG","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"YOKOHAMA","leenai_comment":"兼(横)-国際 (M1)6:30 ※9日より移動"},{"leenai_name":"2026-05-12_国際_06:30","leenai_scheddate":"2026-05-12T00:00:00Z","leenai_truck":"国際","leenai_packer":"兼(横)","leenai_scheduletime":"06:30","leenai_cttype":"C1","leenai_item_code":"JOCC","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"YOKOHAMA","leenai_comment":"兼(横)-国際 (C1)6:30 ②"},{"leenai_name":"2026-05-13_国際_07:00","leenai_scheddate":"2026-05-13T00:00:00Z","leenai_truck":"国際","leenai_packer":"兼(横)","leenai_scheduletime":"07:00","leenai_cttype":"M1","leenai_item_code":"JOMG","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"YOKOHAMA","leenai_comment":"兼(横)-国際 (M1)7:00"},{"leenai_name":"2026-05-14_国際_13:30","leenai_scheddate":"2026-05-14T00:00:00Z","leenai_truck":"国際","leenai_packer":"兼(埼)","leenai_scheduletime":"13:30","leenai_cttype":"M1","leenai_item_code":"JOMG","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"TOKYO","leenai_comment":"兼(埼)-国際 (M1)13:30"},{"leenai_name":"2026-05-15_国際_14:30","leenai_scheddate":"2026-05-15T00:00:00Z","leenai_truck":"国際","leenai_packer":"兼(船)","leenai_scheduletime":"14:30","leenai_cttype":"S1","leenai_item_code":"JOOP","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"YOKOHAMA","leenai_comment":"兼(船)-国際 (S1) 14:30"},{"leenai_name":"2026-05-16_池谷_06:30","leenai_scheddate":"2026-05-16T00:00:00Z","leenai_truck":"池谷","leenai_packer":"兼(横)","leenai_scheduletime":"06:30","leenai_cttype":"C1","leenai_item_code":"JOCC","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"YOKOHAMA","leenai_comment":"兼(横)-池谷 (C1)6:30 ①"},{"leenai_name":"2026-05-07_日正_07:00","leenai_scheddate":"2026-05-07T00:00:00Z","leenai_truck":"日正","leenai_packer":"兼(湘)","leenai_scheduletime":"07:00","leenai_cttype":"C1","leenai_item_code":"JOCC","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"YOKOHAMA","leenai_comment":"兼(湘)-日正 (C1)7:00 ②"},{"leenai_name":"2026-05-08_国際_07:00","leenai_scheddate":"2026-05-08T00:00:00Z","leenai_truck":"国際","leenai_packer":"東(新井浦和)","leenai_scheduletime":"07:00","leenai_cttype":"C1","leenai_item_code":"JOCC","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"TOKYO","leenai_comment":"東(新井浦和)-国際 (C1)7:00"},{"leenai_name":"2026-05-09_日正_07:00","leenai_scheddate":"2026-05-09T00:00:00Z","leenai_truck":"日正","leenai_packer":"兼(湘)","leenai_scheduletime":"07:00","leenai_cttype":"C1","leenai_item_code":"JOCC","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"YOKOHAMA","leenai_comment":"兼(湘)-日正 (C1)7:00 ②"},{"leenai_name":"2026-05-11_国際_07:00","leenai_scheddate":"2026-05-11T00:00:00Z","leenai_truck":"国際","leenai_packer":"兼(横)","leenai_scheduletime":"07:00","leenai_cttype":"M1","leenai_item_code":"JOMG","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"YOKOHAMA","leenai_comment":"兼(横)-国際 (M1)7:00"},{"leenai_name":"2026-05-12_国際_07:00","leenai_scheddate":"2026-05-12T00:00:00Z","leenai_truck":"国際","leenai_packer":"兼(横)","leenai_scheduletime":"07:00","leenai_cttype":"M1","leenai_item_code":"JOMG","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"YOKOHAMA","leenai_comment":"兼(横)-国際 (M1)7:00"},{"leenai_name":"2026-05-07_日正_08:00","leenai_scheddate":"2026-05-07T00:00:00Z","leenai_truck":"日正","leenai_packer":"兼(湘)","leenai_scheduletime":"08:00","leenai_cttype":"C1","leenai_item_code":"JOCC","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"YOKOHAMA","leenai_comment":"兼(湘)-日正 (C1)8:00 ②"},{"leenai_name":"2026-05-08_池谷_08:30","leenai_scheddate":"2026-05-08T00:00:00Z","leenai_truck":"池谷","leenai_packer":"東(興栄)","leenai_scheduletime":"08:30","leenai_cttype":"C1","leenai_item_code":"JOCC","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"TOKYO","leenai_comment":"東(興栄)-池谷 (C1)8:30"},{"leenai_name":"2026-05-09_日正_08:00","leenai_scheddate":"2026-05-09T00:00:00Z","leenai_truck":"日正","leenai_packer":"兼(湘)","leenai_scheduletime":"08:00","leenai_cttype":"C1","leenai_item_code":"JOCC","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"YOKOHAMA","leenai_comment":"兼(湘)-日正 (C1)8:00 ②"},{"leenai_name":"2026-05-11_日正_13:00","leenai_scheddate":"2026-05-11T00:00:00Z","leenai_truck":"日正","leenai_packer":"兼(湘)","leenai_scheduletime":"13:00","leenai_cttype":"M1","leenai_item_code":"JOMG","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"YOKOHAMA","leenai_comment":"兼(湘)-日正 (M1)13:00"},{"leenai_name":"2026-05-12_日正_13:00","leenai_scheddate":"2026-05-12T00:00:00Z","leenai_truck":"日正","leenai_packer":"兼(湘)","leenai_scheduletime":"13:00","leenai_cttype":"M1","leenai_item_code":"JOMG","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"YOKOHAMA","leenai_comment":"兼(湘)-日正 (M1)13:00 11日から移動 ②"},{"leenai_name":"2026-05-07_国際_13:00","leenai_scheddate":"2026-05-07T00:00:00Z","leenai_truck":"国際","leenai_packer":"兼(埼)","leenai_scheduletime":"13:00","leenai_cttype":"M1","leenai_item_code":"JOMG","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"TOKYO","leenai_comment":"兼(埼)-国際 (M1)7:30②"},{"leenai_name":"2026-05-08_国際_13:00","leenai_scheddate":"2026-05-08T00:00:00Z","leenai_truck":"国際","leenai_packer":"東(八)","leenai_scheduletime":"13:00","leenai_cttype":"C1","leenai_item_code":"JOCC","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"TOKYO","leenai_comment":"東(八)-国際 (C1)13:00"},{"leenai_name":"2026-05-07_国際_13:30","leenai_scheddate":"2026-05-07T00:00:00Z","leenai_truck":"国際","leenai_packer":"兼(横)","leenai_scheduletime":"13:30","leenai_cttype":"M1","leenai_item_code":"JOMG","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"YOKOHAMA","leenai_comment":"兼(横)-国際 (M1)7:30②"},{"leenai_name":"2026-05-08_国際_13:00_2","leenai_scheddate":"2026-05-08T00:00:00Z","leenai_truck":"国際","leenai_packer":"東(新井千葉)","leenai_scheduletime":"13:00","leenai_cttype":"C1","leenai_item_code":"JOCC","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"TOKYO","leenai_comment":"東(新井千葉)-国際 (C1)13:00"},{"leenai_name":"2026-05-09_国際_09:00","leenai_scheddate":"2026-05-09T00:00:00Z","leenai_truck":"国際","leenai_packer":"富士","leenai_scheduletime":"09:00","leenai_cttype":"C1","leenai_item_code":"JOCC","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"TOKYO","leenai_comment":"富士-国際 （C1)9:00"},{"leenai_name":"2026-05-11_国際_13:00","leenai_scheddate":"2026-05-11T00:00:00Z","leenai_truck":"国際","leenai_packer":"東(こづか本社)","leenai_scheduletime":"13:00","leenai_cttype":"N","leenai_item_code":"JONP","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"TOKYO","leenai_comment":"東(こづか本社)-国際 (N)13:00"},{"leenai_name":"2026-05-12_国際_13:00","leenai_scheddate":"2026-05-12T00:00:00Z","leenai_truck":"国際","leenai_packer":"東(相)","leenai_scheduletime":"13:00","leenai_cttype":"M1","leenai_item_code":"JOMG","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"TOKYO","leenai_comment":"東(相)-国際 (M1)13:30"},{"leenai_name":"2026-05-18_池谷_06:00","leenai_scheddate":"2026-05-18T00:00:00Z","leenai_truck":"池谷","leenai_packer":"兼(横)","leenai_scheduletime":"06:00","leenai_cttype":"C1","leenai_item_code":"JOCC","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"YOKOHAMA","leenai_comment":"兼(横)-池谷 (C1)6:00 ①"},{"leenai_name":"2026-05-19_池谷_06:00","leenai_scheddate":"2026-05-19T00:00:00Z","leenai_truck":"池谷","leenai_packer":"兼(横)","leenai_scheduletime":"06:00","leenai_cttype":"C1","leenai_item_code":"JOCC","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"YOKOHAMA","leenai_comment":"兼(横)-池谷 (C1)6:00 ①"},{"leenai_name":"2026-05-20_IT_06:00","leenai_scheddate":"2026-05-20T00:00:00Z","leenai_truck":"IT","leenai_packer":"兼(横)","leenai_scheduletime":"06:00","leenai_cttype":"C1","leenai_item_code":"JOCC","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"YOKOHAMA","leenai_comment":"兼(横)-IT (C1)6:00"},{"leenai_name":"2026-05-21_池谷_06:00","leenai_scheddate":"2026-05-21T00:00:00Z","leenai_truck":"池谷","leenai_packer":"兼(横)","leenai_scheduletime":"06:00","leenai_cttype":"C1","leenai_item_code":"JOCC","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"YOKOHAMA","leenai_comment":"兼(横)-池谷 (C1)6:00"},{"leenai_name":"2026-05-22_池谷_06:00","leenai_scheddate":"2026-05-22T00:00:00Z","leenai_truck":"池谷","leenai_packer":"兼(横)","leenai_scheduletime":"06:00","leenai_cttype":"C1","leenai_item_code":"JOCC","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"YOKOHAMA","leenai_comment":"兼(横)-池谷 (C1)6:00"},{"leenai_name":"2026-05-23_池谷_06:00","leenai_scheddate":"2026-05-23T00:00:00Z","leenai_truck":"池谷","leenai_packer":"兼(横)","leenai_scheduletime":"06:00","leenai_cttype":"C1","leenai_item_code":"JOCC","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"YOKOHAMA","leenai_comment":"兼(横)-池谷 (C1)6:00"},{"leenai_name":"2026-05-18_IT_06:30","leenai_scheddate":"2026-05-18T00:00:00Z","leenai_truck":"IT","leenai_packer":"兼(横)","leenai_scheduletime":"06:30","leenai_cttype":"C1","leenai_item_code":"JOCC","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"YOKOHAMA","leenai_comment":"兼(横)-IT (C1)6:30"},{"leenai_name":"2026-05-19_IT_06:30","leenai_scheddate":"2026-05-19T00:00:00Z","leenai_truck":"IT","leenai_packer":"兼(横)","leenai_scheduletime":"06:30","leenai_cttype":"C1","leenai_item_code":"JOCC","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"YOKOHAMA","leenai_comment":"兼(横)-IT (C1)6:30"},{"leenai_name":"2026-05-20_山勝_07:00","leenai_scheddate":"2026-05-20T00:00:00Z","leenai_truck":"山勝","leenai_packer":"兼(横)","leenai_scheduletime":"07:00","leenai_cttype":"N1","leenai_item_code":"JONP","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"YOKOHAMA","leenai_comment":"兼(横)-山勝  (N1) 7:00"},{"leenai_name":"2026-05-18_国際_07:00","leenai_scheddate":"2026-05-18T00:00:00Z","leenai_truck":"国際","leenai_packer":"兼(湘)","leenai_scheduletime":"07:00","leenai_cttype":"C1","leenai_item_code":"JOCC","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"YOKOHAMA","leenai_comment":"兼(湘)-国際 (C1)7:00"},{"leenai_name":"2026-05-19_国際_07:00","leenai_scheddate":"2026-05-19T00:00:00Z","leenai_truck":"国際","leenai_packer":"兼(湘)","leenai_scheduletime":"07:00","leenai_cttype":"C1","leenai_item_code":"JOCC","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"YOKOHAMA","leenai_comment":"兼(湘)-国際 (C1)7:00"},{"leenai_name":"2026-06-01_国際_07:00","leenai_scheddate":"2026-06-01T00:00:00Z","leenai_truck":"国際","leenai_packer":"兼(湘)","leenai_scheduletime":"07:00","leenai_cttype":"C1","leenai_item_code":"JOCC","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"YOKOHAMA","leenai_comment":"兼(湘)-国際 (C1)7:00"},{"leenai_name":"2026-06-02_国際_07:00","leenai_scheddate":"2026-06-02T00:00:00Z","leenai_truck":"国際","leenai_packer":"兼(湘)","leenai_scheduletime":"07:00","leenai_cttype":"C1","leenai_item_code":"JOCC","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"YOKOHAMA","leenai_comment":"兼(湘)-国際 (C1)7:00"},{"leenai_name":"2026-06-03_国際_07:00","leenai_scheddate":"2026-06-03T00:00:00Z","leenai_truck":"国際","leenai_packer":"兼(湘)","leenai_scheduletime":"07:00","leenai_cttype":"C1","leenai_item_code":"JOCC","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"YOKOHAMA","leenai_comment":"兼(湘)-国際 (C1)7:00"},{"leenai_name":"2026-06-04_国際_07:00","leenai_scheddate":"2026-06-04T00:00:00Z","leenai_truck":"国際","leenai_packer":"兼(湘)","leenai_scheduletime":"07:00","leenai_cttype":"C1","leenai_item_code":"JOCC","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"YOKOHAMA","leenai_comment":"兼(湘)-国際 (C1)7:00"},{"leenai_name":"2026-06-05_国際_07:00","leenai_scheddate":"2026-06-05T00:00:00Z","leenai_truck":"国際","leenai_packer":"兼(湘)","leenai_scheduletime":"07:00","leenai_cttype":"C1","leenai_item_code":"JOCC","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"YOKOHAMA","leenai_comment":"兼(湘)-国際 (C1)7:00"},{"leenai_name":"2026-06-06_国際_07:00","leenai_scheddate":"2026-06-06T00:00:00Z","leenai_truck":"国際","leenai_packer":"兼(湘)","leenai_scheduletime":"07:00","leenai_cttype":"C1","leenai_item_code":"JOCC","leenai_hon":1,"leenai_status":"confirmed","leenai_pol":"YOKOHAMA","leenai_comment":"兼(湘)-国際 (C1)7:00"}];
+
+function openImportModal(){
+  const total = IMPORT_RECORDS.length;
+  const modal = document.getElementById('importModal');
+  document.getElementById('importInfo').textContent = `エクセル表から解析済み: ${total}件 (2026-05-07 〜 2026-07-04)`;
+  document.getElementById('importProgress').style.width = '0%';
+  document.getElementById('importStatus').textContent = '';
+  modal.classList.add('open');
+}
+function closeImportModal(){
+  document.getElementById('importModal').classList.remove('open');
+}
+async function runBulkImport(){
+  if(!S.accessToken || Date.now() > S.tokenExpiry){
+    toast('COMPASSログインが必要です', 'err'); return;
+  }
+  const btn = document.getElementById('importRunBtn');
+  btn.disabled = true;
+  const total = IMPORT_RECORDS.length;
+  let ok = 0, fail = 0;
+  const bar = document.getElementById('importProgress');
+  const status = document.getElementById('importStatus');
+  const BATCH = 5;
+  for(let i = 0; i < total; i += BATCH){
+    const batch = IMPORT_RECORDS.slice(i, i+BATCH);
+    await Promise.all(batch.map(async rec => {
+      try {
+        await dvPost('leenai_b05_drayschedules', rec);
+        ok++;
+      } catch(e){ fail++; console.error(rec.leenai_name, e); }
+    }));
+    const pct = Math.round((i+BATCH)/total*100);
+    bar.style.width = Math.min(100,pct)+'%';
+    status.textContent = `${Math.min(i+BATCH,total)}/${total}件処理中...`;
+    await new Promise(r=>setTimeout(r,150));
+  }
+  status.textContent = `完了: 成功${ok}件 / 失敗${fail}件`;
+  bar.style.width = '100%';
+  btn.disabled = false;
+  toast(`一括登録完了: ✅${ok}件 ❌${fail}件`, ok>0?'ok':'err');
+  if(ok>0) await loadFromDataverse();
 }
 
 // ══════════════════════════════════════════

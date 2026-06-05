@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v4.6</title>
+<title>LEENAI ドレースケジュール管理 v4.8</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -293,7 +293,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v4.6</div>
+  <div class="header-ver">v4.8</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -333,6 +333,14 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
     <option value="丸康">丸康</option>
     <option value="ウブ">ウブカタ</option>
     <option value="富士">富士</option>
+  </select>
+  <select class="dray-select" id="itemFilter" onchange="render()">
+    <option value="">全ITEM</option>
+    <option value="JOCC">C — 段ボール</option>
+    <option value="JOMG">M — 雑誌</option>
+    <option value="JOOP">S — SOP</option>
+    <option value="JONP">N — 新聞</option>
+    <option value="JOCP">B — 台紙</option>
   </select>
   <div class="ctrl-sep"></div>
   <button class="btn btn-ghost btn-sm" id="refreshBtn" onclick="refreshCompass()">🔄 COMPASS</button>
@@ -586,7 +594,8 @@ const S = {
   currentMonth: new Date().getMonth() + 1,
   pol: 'TOKYO',
   drayFilter:   '',   // 드레이 필터
-  packerFilter: '',   // Packer 필터
+  packerFilter: '',
+  itemFilter:   '',   // Packer 필터
   // B-05 데이터 (Dataverse 연결 전 mock)
   kariRules: [],        // 仮押さえ 규칙
   kariExceptions: [],   // 날짜별 예외
@@ -1729,6 +1738,7 @@ function render(){
   S.pol = 'TOKYO+YOKOHAMA'; // 常にTOKYO+YOKOHAMA固定
   S.drayFilter   = document.getElementById('drayFilter')?.value   || '';
   S.packerFilter = document.getElementById('packerFilter')?.value || '';
+  S.itemFilter   = document.getElementById('itemFilter')?.value   || '';
   const ml = `${S.currentYear}年${S.currentMonth}月`;
   document.getElementById('monthLabel').textContent = ml;
   rebuildCompassByPol(); // POL 변경 반영
@@ -1914,6 +1924,11 @@ function renderCalendar(){
         dayScheds  = dayScheds.filter(s => s.truck === S.drayFilter);
         compassDay = compassDay.filter(c => c.drayShort === S.drayFilter);
       }
+      // ITEM 필터
+      if(S.itemFilter){
+        dayScheds  = dayScheds.filter(s => (s.leenai_cttype||s.cttype||'').startsWith(S.itemFilter.replace('JOCC','C').replace('JOMG','M').replace('JOOP','S').replace('JONP','N').replace('JOCP','B')) || (s.leenai_cttype||s.cttype||'') === S.itemFilter);
+        compassDay = compassDay.filter(c => c.itemCode === S.itemFilter);
+      }
       // Packer 필터
       if(S.packerFilter){
         dayScheds  = dayScheds.filter(s => getPackerShort(s.packer||'') === S.packerFilter);
@@ -1973,10 +1988,12 @@ function buildCellHTML(date, ds, slots, dayScheds, fulfillment, compassDay){
   const amSlots = slots.filter(s => s.timezone === '午前' || s.timezone === null);
   const pmSlots = slots.filter(s => s.timezone === '午後');
   if(slots.length > 0){
-    html += `<div class="kari-section"><div class="kari-label">午前</div><div class="kari-slots">${amSlots.map(s => buildKariSlot(s, ds)).join('')}</div></div>`;
-    if(pmSlots.length > 0){
-      html += `<hr class="kari-divider"><div class="kari-section"><div class="kari-label">午後</div><div class="kari-slots">${pmSlots.map(s => buildKariSlot(s, ds)).join('')}</div></div>`;
-    }
+    html += `<div class="kari-section" style="display:flex;gap:6px;align-items:flex-start;flex-wrap:wrap;">`;
+    if(amSlots.length > 0)
+      html += `<div style="display:flex;gap:2px;align-items:center;"><span class="kari-label" style="font-size:9px;margin:0;">午前</span><div class="kari-slots">${amSlots.map(s => buildKariSlot(s, ds)).join('')}</div></div>`;
+    if(pmSlots.length > 0)
+      html += `<div style="display:flex;gap:2px;align-items:center;"><span class="kari-label" style="font-size:9px;margin:0;">午後</span><div class="kari-slots">${pmSlots.map(s => buildKariSlot(s, ds)).join('')}</div></div>`;
+    html += `</div>`;
   }
 
   // ── COMPASS + B-05 통합 표시 ──
@@ -2014,7 +2031,7 @@ function buildCellHTML(date, ds, slots, dayScheds, fulfillment, compassDay){
   // 렌더링
   if(compassDay.length > 0 || dayScheds.length > 0){
     html += `<div class="compass-section"><div class="compass-label">🔵 COMPASS</div>`;
-    const showItems = mergedItems.slice(0, 6);
+    const showItems = mergedItems; // 件数制限なし 全件表示
     showItems.forEach(item => {
       if(item.type === 'both'){
         const c = item.compass;
@@ -2032,10 +2049,11 @@ function buildCellHTML(date, ds, slots, dayScheds, fulfillment, compassDay){
         const plShort = getPlantShort(s.packer||'');
         const pkPl = plShort && plShort !== pkShort ? `${pkShort}(${plShort})` : pkShort;
         const tm = s.leenai_scheduletime||s.time||'フリー';
-        html += `<div class="sched-item sched-only" style="font-size:12px;">${escH(pkPl||s.packer||'')}-${escH(s.truck||'')} ${escH(tm)}<span class="match-badge match-warn">COMPASS未</span></div>`;
+        const ct = s.leenai_cttype||s.cttype||'';
+        html += `<div class="sched-item sched-only" style="font-size:12px;">${escH(pkPl||s.packer||'')}-${escH(s.truck||'')} ${escH(ct)} ${escH(tm)}<span class="match-badge match-warn">COMPASS未</span></div>`;
       }
     });
-    if(mergedItems.length > 6) html += `<div style="font-size:9px;color:var(--text3);">+${mergedItems.length-6}件</div>`;
+
     html += `</div>`;
   }
 
@@ -2105,11 +2123,13 @@ function openSchedModal(ds, dateObj, addMode = false){
     html += `<div class="form-section-label">登録済みスケジュール</div>
     <div class="existing-list">`;
     dayScheds.forEach(s => {
+      const itemLabel = s.leenai_cttype||s.cttype||'';
       html += `<div class="existing-item ${s.status}">
         <div class="ei-truck">${escH(s.truck)}</div>
-        <div class="ei-info">${escH(s.packer||'')} ${escH(s.time||'')} ${escH(s.cttype||'')}</div>
+        <div class="ei-info">${escH(s.packer||'')} ${escH(s.leenai_scheduletime||s.time||'')} ${escH(itemLabel)}</div>
         <span class="ei-status status-${s.status}">${statusLabel(s.status)}</span>
-        <button class="icon-btn" onclick="deleteSchedule('${s.id}')">🗑</button>
+        <button class="icon-btn" title="編集" onclick="editSchedule('${s.id}')">✏️</button>
+        <button class="icon-btn" title="削除" onclick="deleteSchedule('${s.id}')">🗑</button>
       </div>`;
     });
     html += '</div>';
@@ -2238,6 +2258,33 @@ async function saveSchedule(){
   } else {
     toast('スケジュールをローカル保存しました', 'ok');
   }
+}
+
+function editSchedule(id){
+  const s = S.schedules.find(x => x.id === id);
+  if(!s) return;
+  S.editingSchedId = id;
+  // 폼에 기존 값 세팅
+  const fTruck = document.getElementById('fTruck');
+  const fTime  = document.getElementById('fTime');
+  const fPacker = document.getElementById('fPacker');
+  const fItem  = document.getElementById('fItem');
+  const fCttype = document.getElementById('fCttype');
+  const fHon   = document.getElementById('fHon');
+  const fBkg   = document.getElementById('fBkg');
+  const fComment = document.getElementById('fComment');
+  if(fTruck)  fTruck.value  = s.truck||'';
+  if(fTime)   fTime.value   = s.leenai_scheduletime||s.time||'フリー';
+  if(fPacker) fPacker.value = s.packer||'';
+  if(fItem)   fItem.value   = s.leenai_cttype||s.cttype||'JOCC';
+  if(fCttype) fCttype.value = s.cttype||'40ft';
+  if(fHon)    fHon.value    = s.leenai_hon||s.hon||1;
+  if(fBkg)    fBkg.value    = s.leenai_bkgno||s.bkgno||'';
+  if(fComment)fComment.value= s.comment||'';
+  // 新規登録ラベルを編集中に変更
+  document.querySelectorAll('.form-section-label').forEach(el => {
+    if(el.textContent === '新規登録') el.textContent = '✏️ 編集中';
+  });
 }
 
 async function deleteSchedule(id){

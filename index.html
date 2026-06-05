@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v5.2</title>
+<title>LEENAI ドレースケジュール管理 v5.3</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -99,10 +99,10 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 
 /* ══ Calendar ══ */
 .calendar-wrap{padding:8px 0;}
-.cal-header{display:grid;grid-template-columns:0.85fr 0.85fr 0.85fr 0.85fr 1fr 1fr 0.2fr;gap:3px;margin-bottom:3px;}
+.cal-header{display:grid;grid-template-columns:repeat(6,0.8fr) 0.2fr;gap:3px;margin-bottom:3px;}
 .cal-dow{text-align:center;font-size:10px;font-weight:700;color:var(--text3);padding:3px 0;}
 .cal-dow.sat{color:var(--info);}.cal-dow.sun{color:var(--danger);}
-.cal-grid{display:grid;grid-template-columns:0.85fr 0.85fr 0.85fr 0.85fr 1fr 1fr 0.2fr;gap:3px;}
+.cal-grid{display:grid;grid-template-columns:repeat(6,0.8fr) 0.2fr;gap:3px;}
 
 /* ══ Calendar Cell ══ */
 .cal-cell{background:var(--surface);border:1px solid var(--border);border-radius:6px;min-height:100px;cursor:pointer;transition:border-color .15s;overflow:hidden;display:flex;flex-direction:column;}
@@ -287,8 +287,15 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 .pr-plant-count{text-align:right;}
 .pr-grade-block{border-bottom:1px solid var(--border);}
 .pr-grade-block:last-child{border-bottom:none;}
-.pr-grade-row{cursor:pointer;}
+.pr-grade-header{display:grid;grid-template-columns:1.5fr repeat(4,1fr);font-size:9px;color:var(--text3);padding:3px 10px;background:var(--surface2);}
+.pr-grade-header span:not(:first-child){text-align:right;}
+.pr-grade-row{display:grid;grid-template-columns:1.5fr repeat(4,1fr);font-size:11px;padding:3px 10px;align-items:center;cursor:pointer;}
 .pr-grade-row:hover{background:var(--surface2);}
+.pr-grade{font-weight:700;color:var(--text);}
+.pr-num{text-align:right;color:var(--text2);}
+.pr-num.ok{color:var(--ok);}
+.pr-num.info{color:var(--info);}
+.pr-num.warn{color:var(--warn);font-weight:700;}
 
 .sc-company-header{padding:10px 16px;display:flex;align-items:center;gap:10px;cursor:pointer;background:var(--surface2);}
 .sc-company-header:hover{background:var(--surface3);}
@@ -313,7 +320,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v5.2</div>
+  <div class="header-ver">v5.3</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -1820,6 +1827,24 @@ function renderSummary(){
   renderPurchasePanel();
 }
 
+// COMPASS packerCode → getPackerShort 약칭 매핑
+const COMPASS_PACKER_MAP = {
+  'KANEKO':'兼',     'KAWASUZU':'川鈴',  'TOKYO':'TKK',      'NAGAI':'新井',
+  'KYOEKI SHOKAI':'共益', 'KYOEKI':'共益', 'MARUKOU':'丸康',  'UBUKTA':'ウブ',
+  'GUNMA':'群馬',    'FUJI':'富士',       'KOZUKA':'こづか',  'ECOSTYLE':'育峯',
+  'TOKYO(N)':'TKK',  'SANKO':'三弘',     'YAMAKATSU':'山治', 'HYOGO':'兵庫',
+  'HARIMA':'播磨',   'OKINAWA':'沖縄',   'KINOSHITA':'木下',
+};
+// COMPASS packerCode → purchase_detail getPackerShort 약칭 변환
+function compassPackerToShort(code){
+  if(!code) return '';
+  const up = code.toUpperCase();
+  for(const [k,v] of Object.entries(COMPASS_PACKER_MAP)){
+    if(up === k.toUpperCase()) return v;
+  }
+  return code;
+}
+
 // Grade 코드 → 약칭
 const GRADE_SHORT = {
   'JOCC':'C','JOMG':'M','JOOP':'S','JBBC':'B','JOCP':'B',
@@ -1836,22 +1861,24 @@ function renderPurchasePanel(){
     return;
   }
 
-  // COMPASS 스케줄 → packerCode+Grade 별 집계 (POL별)
-  const compassCount = {}; // pol_packerCode_grade → count
+  // COMPASS 스케줄 → packerShort+Grade 별 집계 (POL별)
+  // compassPackerToShort으로 영문코드→일본어약칭 변환
+  const compassCount = {}; // pol_packerShort_grade → count
   (S.compassSchedules||[]).forEach(c => {
     if(!c.pol || (c.pol!=='TOKYO'&&c.pol!=='YOKOHAMA')) return;
-    const k = `${c.pol}|${(c.packerCode||'').toUpperCase()}|${gradeShort(c.itemCode||'')}`;
+    const pkShort = compassPackerToShort(c.packerCode||'');
+    const k = `${c.pol}|${pkShort}|${gradeShort(c.itemCode||'')}`;
     compassCount[k] = (compassCount[k]||0) + 1;
   });
 
-  // B05 스케줄 → packer+Grade 별 집계
+  // B05 스케줄 → packerShort+Grade 별 집계
   const b05Count = {}; // pol_packerShort_grade → count
   (S.schedules||[]).forEach(s => {
     const pol = s.leenai_pol||s.pol||'';
     if(pol!=='TOKYO'&&pol!=='YOKOHAMA') return;
     const sp = getPackerShort(s.packer||'');
     const gr = gradeShort(s.leenai_cttype||s.cttype||'');
-    const k = `${pol}|${sp.toUpperCase()}|${gr}`;
+    const k = `${pol}|${sp}|${gr}`;
     b05Count[k] = (b05Count[k]||0) + 1;
   });
 
@@ -1905,7 +1932,7 @@ function renderPurchasePanel(){
           .sort((a,b) => a[0].localeCompare(b[0]))
           .map(([gr, gds]) => {
             const contract = gds.reduce((s,d)=>s+(d.cr49f_count||0),0);
-            const ck = `${pol}|${shortName.toUpperCase()}|${gr}`;
+            const ck = `${pol}|${shortName}|${gr}`;
             const compass = compassCount[ck]||0;
             const b05     = b05Count[ck]||0;
             const rem     = Math.max(0, contract - compass);

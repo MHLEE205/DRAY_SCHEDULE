@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v3.9</title>
+<title>LEENAI ドレースケジュール管理 v4.0</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -293,7 +293,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v3.9</div>
+  <div class="header-ver">v4.0</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -2450,11 +2450,9 @@ async function runBulkImport(){
         if(cs){
           usedCompass.add(cs.id);
           matched++;
-          rec.leenai_pol     = cs.pol     || rec.leenai_pol || '';
-          rec.leenai_bkgno   = cs.bkgNo   || '';
-          rec.leenai_vessel  = cs.vessel   || '';
-          rec.leenai_carrier = cs.carrier  || '';
-          rec.leenai_pod     = cs.pod      || '';
+          rec.leenai_pol    = cs.pol   || rec.leenai_pol || '';
+          rec.leenai_bkgno  = cs.bkgNo || '';
+          // vessel/carrier/pod는 컬럼 확인 후 별도 PATCH 예정
         }
         await dvPost('leenai_b05_drayschedules', rec);
         ok++;

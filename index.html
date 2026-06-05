@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v3.8</title>
+<title>LEENAI ドレースケジュール管理 v3.9</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -293,7 +293,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v3.8</div>
+  <div class="header-ver">v3.9</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -2485,7 +2485,7 @@ async function runBulkDelete(){
   status.textContent = '全件取得中...';
   try {
     // 全件取得 (最大2000件)
-    const res = await dvGet(`leenai_b05_drayschedules?$select=leenai_b05_drayschedidid,leenai_name&$top=2000`);
+    const res = await dvGet(`leenai_b05_drayschedules?$select=leenai_name&$top=2000`);
     const all = res.value || [];
     const total = all.length;
     if(total === 0){ status.textContent = '削除対象データなし'; btn.disabled=false; return; }
@@ -2495,10 +2495,15 @@ async function runBulkDelete(){
     for(let i=0; i<total; i+=BATCH){
       const batch = all.slice(i, i+BATCH);
       await Promise.all(batch.map(async r => {
-        const pkKey = Object.keys(r).find(k => k.startsWith('leenai_b05_') && k.endsWith('id') && k !== 'leenai_b05_drayschedidid') 
-                   || 'leenai_b05_drayschedidid';
-        const id = r[pkKey] || r['leenai_b05_drayschedidid'];
-        if(!id){ fail++; return; }
+        // PK 자동감지: leenai_b05_*id 패턴 또는 @odata.etag에서 추출
+        const pkKey = Object.keys(r).find(k => k.startsWith('leenai_b05_') && k.endsWith('id'));
+        let id = pkKey ? r[pkKey] : null;
+        // etag fallback: "@odata.etag": "W/"12345"" → guid는 URL에서
+        if(!id && r['@odata.id']){
+          const m = r['@odata.id'].match(/\(([^)]+)\)/);
+          if(m) id = m[1];
+        }
+        if(!id){ fail++; console.warn('PK not found:', r); return; }
         try { await dvDelete('leenai_b05_drayschedules', id); ok++; }
         catch(e){ fail++; console.error(id, e); }
       }));

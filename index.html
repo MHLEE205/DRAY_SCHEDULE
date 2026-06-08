@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v5.7</title>
+<title>LEENAI ドレースケジュール管理 v5.8</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -319,7 +319,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v5.7</div>
+  <div class="header-ver">v5.8</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -674,11 +674,35 @@ const DEFAULT_STAFF = [
 ];
 
 const PACKER_LIST = [
-  '兼子(船橋)','兼子(横浜)','兼子(湘南)','兼子(埼玉)','兼子(市原)',
-  '東(新井千葉)','東(新井松戸)','東(三弘相模原)','東(三弘朝霞)','東(三弘八王子)',
-  '東(こづか本社)','東(こづか横浜北)','東(関東紙業)','東(興栄)','東(日興紙業)',
-  '東(川鈴)','山治','熊谷(本社)','熊谷(古河)','紙材(練馬)','紙材(新座)',
-  'TPC','ツルミ紙業','共益商会','丸康','育峯','ウブカタ','群馬(前橋)',
+  // 兼子 (KANEKO) — TOKYO/YOKOHAMA
+  '兼子(埼玉)','兼子(川崎)','兼子(市原)','兼子(戸田)','兼子(横浜)',
+  '兼子(湘南)','兼子(船橋)','兼子(合同資源）','兼子(柿弘)','兼子(コスモ)',
+  // TKK系 — こづか
+  'こづか(本社)','こづか(横浜北)',
+  // TKK系 — 三弘
+  '三弘(八王子)','三弘(戸田)','三弘(朝霞)','三弘(相模原）','三弘(鳩ケ谷)','三弘(日興紙業)',
+  // TKK系 — 川鈴
+  '川鈴','川鈴(第二営業所)',
+  // TKK系 — 新井
+  '新井商店(入谷)','新井商店(千葉)','新井商店(成田)','新井商店(松戸)','新井商店(浦和)','新井商店(綾瀬)',
+  // TKK系 — その他
+  '興栄紙材','関東紙業','ツルミ紙業(本社)','カネショウ','赤松商店','株式会社山治紙業',
+  // 共益商会 (KYOEKI SHOKAI)
+  '共益商会',
+  // TPC
+  'TPC(千葉市)',
+  // ウブカタ
+  'ウブカタ資源',
+  // 群馬
+  '群馬(前橋)',
+  // 丸康
+  '丸康',
+  // エコスタイル (ECOSTYLE)
+  'エコスタイル株式会社',
+  // 木下紙業 (KINOSHITA)
+  '木下紙業',
+  // ナガイ
+  'ナガイ(みよし)',
 ];
 const TRUCK_LIST = ['池谷','IT','国際','山勝','日正','東方','アサヒ','今井','IS','EA'];
 const CT_TYPES = ['20ft','40ft','40HQ'];

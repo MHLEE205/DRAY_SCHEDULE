@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v5.8</title>
+<title>LEENAI ドレースケジュール管理 v5.9</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -319,7 +319,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v5.8</div>
+  <div class="header-ver">v5.9</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -693,8 +693,8 @@ const PACKER_LIST = [
   'TPC(千葉市)',
   // ウブカタ
   'ウブカタ資源',
-  // 群馬
-  '群馬(前橋)',
+  // 群馬総合紙業 (GUMMA)
+  '群馬(前橋)','群馬(宇都宮)','群馬(太田)','群馬(館林)',
   // 丸康
   '丸康',
   // エコスタイル (ECOSTYLE)
@@ -1854,7 +1854,7 @@ function renderSummary(){
 const COMPASS_PACKER_MAP = {
   'KANEKO':'兼',     'KAWASUZU':'川鈴',  'TOKYO':'TKK',      'NAGAI':'新井',
   'KYOEKI SHOKAI':'共益', 'KYOEKI':'共益', 'MARUKOU':'丸康',  'UBUKTA':'ウブ',
-  'GUNMA':'群馬',    'FUJI':'富士',       'KOZUKA':'こづか',  'ECOSTYLE':'育峯',
+  'GUMMA':'群馬',   'GUNMA':'群馬',    'FUJI':'富士',       'KOZUKA':'こづか',  'ECOSTYLE':'育峯',
   'TOKYO(N)':'TKK',  'SANKO':'三弘',     'YAMAKATSU':'山治', 'HYOGO':'兵庫',
   'HARIMA':'播磨',   'OKINAWA':'沖縄',   'KINOSHITA':'木下',
 };

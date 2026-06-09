@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v5.9</title>
+<title>LEENAI ドレースケジュール管理 v5.11</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -319,7 +319,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v5.9</div>
+  <div class="header-ver">v5.11</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -364,6 +364,16 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
     <option value="">全ITEM</option>
     <option value="JOCC">C — 段ボール</option>
     <option value="JOMG">M — 雑誌</option>
+    <option value="JOOP">S — SOP</option>
+    <option value="JONP">N — 新聞</option>
+    <option value="JOCP">B — 台紙</option>
+    <option value="KGB-B">袋B — KGB-B</option>
+    <option value="KGB">袋 — KGB</option>
+    <option value="PAPER CORE">紙管 — PAPER CORE</option>
+    <option value="JMC">MC — JMC</option>
+    <option value="KCB">KC — KCB</option>
+    <option value="JOINP">残紙 — JOINP</option>
+    <option value="SHREDDER">シュレッダー — SHREDDER</option>
     <option value="JOOP">S — SOP</option>
     <option value="JONP">N — 新聞</option>
     <option value="JOCP">B — 台紙</option>
@@ -1308,6 +1318,7 @@ const PACKER_SHORT = {
   '紙材':           '紙材',
   '熊谷':           '熊谷',
   '群馬総合紙業':   '群馬', '株式会社群馬総合紙業':'群馬',
+  '群馬(前橋)':     '群馬', '群馬(宇都宮)':'群馬', '群馬(太田)':'群馬', '群馬(館林)':'群馬',
   'ツルミ紙業':     'ツルミ',
   '丸康商店':       '丸康', '株式会社丸康商店':   '丸康',
   '共益商会':       '共益', '株式会社共益・商会': '共益',
@@ -1346,7 +1357,8 @@ const ITEM_CODE_SHORT = {
   // crcf9_item_japan (일본어명) → 엑셀 약칭
   '段ボール':'C', '雑誌':'M',  'ONP':'N',   'SOP':'S',
   'BBC':'B',      'OCC':'C',   'OMG':'M',
-  'SHREDDER':'シ','OINP':'残紙',
+  'SHREDDER':'シュレッダー','OINP':'残紙',
+  'KGB-B':'袋B','KGB':'袋','PAPER CORE':'紙管','JMC':'MC','KCB':'KC','JOINP':'残紙',
   'e段':'E',      'KGB-B':'KG','KGB':'KG',  'PPG':'P',
   '牛乳パック':'牛乳', '紙管':'紙管', '間紙':'間紙',
   // 풀네임 → 약칭
@@ -1872,7 +1884,8 @@ function compassPackerToShort(code){
 const GRADE_SHORT = {
   // ITEM 코드
   'JOCC':'C','JOMG':'M','JOOP':'S','JBBC':'B','JOCP':'B',
-  'JONP':'N','JSOP':'S','SHREDDER':'シ','JOWP':'W',
+  'JONP':'N','JSOP':'S','SHREDDER':'シュレッダー','JOWP':'W',
+  'KGB-B':'袋B','KGB':'袋','PAPER CORE':'紙管','JMC':'MC','KCB':'KC','JOINP':'残紙',
   'OCC':'C','OMG':'M','SOP':'S','BBC':'B','ONP':'N',
   // 일본어명 (purchase_detail _item_ja)
   '段ボール':'C','雑誌':'M','新聞':'N','残紙':'残',
@@ -1888,6 +1901,7 @@ const GRADE_JA = {
   'JOCC':'段ボール', 'JOMG':'雑誌',   'JOOP':'SOP',    'JBBC':'BBC',
   'JOCP':'台紙',     'JONP':'新聞',    'JSOP':'SOP',    'JOWP':'白',
   'SHREDDER':'シュレッダー',
+  'KGB-B':'袋B','KGB':'袋','PAPER CORE':'紙管','JMC':'MC','KCB':'KC','JOINP':'残紙',
   // 日本語名そのまま通す
   '段ボール':'段ボール','雑誌':'雑誌','新聞':'新聞','残紙':'残紙',
   'SOP':'SOP','シュレッダー':'シュレッダー','古着':'古着','古紙':'古紙',
@@ -2276,12 +2290,15 @@ function buildCellHTML(date, ds, slots, dayScheds, fulfillment, compassDay){
       } else {
         // B-05만 (COMPASS未)
         const s = item.sched;
-        const pkShort = getPackerShort(s.packer||'');
-        const plShort = getPlantShort(s.packer||'');
-        const pkPl = plShort && plShort !== pkShort ? `${pkShort}(${plShort})` : pkShort;
-        const tm = s.leenai_scheduletime||s.time||'フリー';
-        const ct = s.leenai_cttype||s.cttype||'';
-        html += `<div class="sched-item sched-only" style="font-size:12px;">${escH(pkPl||s.packer||'')}-${escH(s.truck||'')} ${escH(ct)} ${escH(tm)}<span class="match-badge match-warn">COMPASS未</span></div>`;
+        // formatScheduleLine으로 COMPASS와 동일한 형식으로 표시
+        const b05line = formatScheduleLine(
+          s.packer||'', s.packer||'', s.truck||'',
+          s.itemCode||s.leenai_cttype||'', '',
+          '', s.hon||1,
+          s.leenai_scheduletime||s.time||'',
+          false
+        );
+        html += `<div class="sched-item sched-only" style="font-size:12px;">${escH(b05line)}<span class="match-badge match-warn">COMPASS未</span></div>`;
       }
     });
 
@@ -2413,6 +2430,13 @@ function openSchedModal(ds, dateObj, addMode = false){
         <option value="JOOP">S — SOP</option>
         <option value="JONP">N — 新聞</option>
         <option value="JOCP">B — 台紙</option>
+        <option value="KGB-B">袋B — KGB-B</option>
+        <option value="KGB">袋 — KGB</option>
+        <option value="PAPER CORE">紙管 — PAPER CORE</option>
+        <option value="JMC">MC — JMC</option>
+        <option value="KCB">KC — KCB</option>
+        <option value="JOINP">残紙 — JOINP</option>
+        <option value="SHREDDER">シュレッダー — SHREDDER</option>
       </select>
     </div>
     <div class="form-group">
@@ -2477,8 +2501,16 @@ async function saveSchedule(){
     truck,
     time: document.getElementById('fTime').value,
     packer: document.getElementById('fPacker').value,
-    cttype: document.getElementById('fCttype').value,
+    // itemCode(JOCC 등) + CT종별(40ft/20ft) → C1/M2 형식으로 leenai_cttype 저장
     itemCode: document.getElementById('fItem').value,
+    cttype: (()=>{
+      const item = document.getElementById('fItem').value;
+      const ct   = document.getElementById('fCttype').value;
+      const itemSh = getItemShort(item, '');  // JOCC→C, JOMG→M 등
+      // CT종별에서 본수 추출: 40ft=1, 20ft=2, 45ft=1 등
+      const ctNum = ct.startsWith('20') ? '2' : '1';
+      return itemSh ? `${itemSh}${ctNum}` : ct;
+    })(),
     hon: parseInt(document.getElementById('fHon').value) || 1,
     status,
     bkgno: document.getElementById('fBkg').value,

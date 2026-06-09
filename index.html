@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v5.13</title>
+<title>LEENAI ドレースケジュール管理 v5.14</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -319,7 +319,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v5.13</div>
+  <div class="header-ver">v5.14</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -373,7 +373,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
     <option value="JMC">MC — JMC</option>
     <option value="KCB">KC — KCB</option>
     <option value="JOINP">残紙 — JOINP</option>
-    <option value="SHREDDER">シュレッダー — SHREDDER</option>
+    <option value="SHREDDER">シ — SHREDDER</option>
     <option value="JOOP">S — SOP</option>
     <option value="JONP">N — 新聞</option>
     <option value="JOCP">B — 台紙</option>
@@ -1357,7 +1357,7 @@ const ITEM_CODE_SHORT = {
   // crcf9_item_japan (일본어명) → 엑셀 약칭
   '段ボール':'C', '雑誌':'M',  'ONP':'N',   'SOP':'S',
   'BBC':'B',      'OCC':'C',   'OMG':'M',
-  'SHREDDER':'シュレッダー','OINP':'残紙',
+  'SHREDDER':'シ','OINP':'残紙',
   'KGB-B':'袋B','KGB':'袋','PAPER CORE':'紙管','JMC':'MC','KCB':'KC','JOINP':'残紙',
   'e段':'E',      'KGB-B':'KG','KGB':'KG',  'PPG':'P',
   '牛乳パック':'牛乳', '紙管':'紙管', '間紙':'間紙',
@@ -1885,7 +1885,7 @@ function compassPackerToShort(code){
 const GRADE_SHORT = {
   // ITEM 코드
   'JOCC':'C','JOMG':'M','JOOP':'S','JBBC':'B','JOCP':'B',
-  'JONP':'N','JSOP':'S','SHREDDER':'シュレッダー','JOWP':'W',
+  'JONP':'N','JSOP':'S','SHREDDER':'シ','JOWP':'W',
   'KGB-B':'袋B','KGB':'袋','PAPER CORE':'紙管','JMC':'MC','KCB':'KC','JOINP':'残紙',
   'OCC':'C','OMG':'M','SOP':'S','BBC':'B','ONP':'N',
   // 일본어명 (purchase_detail _item_ja)
@@ -1901,11 +1901,11 @@ function gradeShort(code){
 const GRADE_JA = {
   'JOCC':'段ボール', 'JOMG':'雑誌',   'JOOP':'SOP',    'JBBC':'BBC',
   'JOCP':'台紙',     'JONP':'新聞',    'JSOP':'SOP',    'JOWP':'白',
-  'SHREDDER':'シュレッダー',
+  'SHREDDER':'シ',
   'KGB-B':'袋B','KGB':'袋','PAPER CORE':'紙管','JMC':'MC','KCB':'KC','JOINP':'残紙',
   // 日本語名そのまま通す
   '段ボール':'段ボール','雑誌':'雑誌','新聞':'新聞','残紙':'残紙',
-  'SOP':'SOP','シュレッダー':'シュレッダー','古着':'古着','古紙':'古紙',
+  'SOP':'SOP','シュレッダー':'シ','古着':'古着','古紙':'古紙',
 };
 function gradeJa(code){
   if(!code) return '—';
@@ -2445,7 +2445,7 @@ function openSchedModal(ds, dateObj, addMode = false){
         <option value="JMC">MC — JMC</option>
         <option value="KCB">KC — KCB</option>
         <option value="JOINP">残紙 — JOINP</option>
-        <option value="SHREDDER">シュレッダー — SHREDDER</option>
+        <option value="SHREDDER">シ — SHREDDER</option>
       </select>
     </div>
     <div class="form-group">

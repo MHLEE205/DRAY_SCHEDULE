@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v5.12</title>
+<title>LEENAI ドレースケジュール管理 v5.13</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -319,7 +319,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v5.12</div>
+  <div class="header-ver">v5.13</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -714,7 +714,7 @@ const PACKER_LIST = [
   // ナガイ
   'ナガイ(みよし)',
 ];
-const TRUCK_LIST = ['池谷','IT','国際','山勝','日正','東方','アサヒ','今井','IS','EA'];
+const TRUCK_LIST = ['未定','池谷','IT','国際','山勝','日正','東方','アサヒ','今井','IS','EA'];
 const CT_TYPES = ['20ft','40ft','40HQ'];
 const TRUCK_COLORS = {'池谷':'#4f8ef7','IT':'#22c55e','国際':'#a78bfa','山勝':'#f59e0b','日正':'#14b8a6'};
 
@@ -1369,7 +1369,8 @@ const ITEM_CODE_SHORT = {
 // CT種別 → 약칭 (엑셀표 형식: C=40ft, M=MIX/20ft계, S=SOP 등)
 const CT_SHORT = {
   '45GP':'C', '40GP':'C', '45HQ':'C', '40HQ':'C',
-  '20GP':'M',
+  '40ft':'C', '45ft':'C', '40HQ':'C',
+  '20GP':'M', '20ft':'M',
   '45R':'R',  '40R':'R',
 };
 
@@ -2296,10 +2297,15 @@ function buildCellHTML(date, ds, slots, dayScheds, fulfillment, compassDay){
         const dray     = s.truck ? getDrayShort(s.truck) : '';
         const ct       = s.leenai_cttype || s.cttype || '';
         const tm       = (s.leenai_scheduletime||s.time||'フリー').slice(0,5);
-        // leenai_cttype이 이미 C1/M1 형식이면 그대로, 아니면 itemCode로 변환
-        const ctDisp   = /^[A-Za-z]\d$/.test(ct) ? ct
-                       : getItemShort(ct,'') ? getItemShort(ct,'')+'1'
-                       : ct;
+        // CT表示: 既にC1/M1形式→そのまま / 40ft/45GP等→CT_SHORTで変換して1を付与 / その他→そのまま
+        let ctDisp = ct;
+        if(/^[A-Za-z]\d+$/.test(ct)){
+          ctDisp = ct; // 既にC1/M2形式
+        } else if(CT_SHORT[ct]){
+          ctDisp = CT_SHORT[ct] + '1'; // 40ft→C1, 20ft→M1 等
+        } else if(ITEM_CODE_SHORT[ct]){
+          ctDisp = ITEM_CODE_SHORT[ct] + '1'; // JOCC→C1 等
+        }
         const left = pkPl ? `${pkPl}-${dray}` : dray;
         html += `<div class="sched-item sched-only" style="font-size:12px;">${escH(left)} ${escH(ctDisp)} ${escH(tm)}<span class="match-badge match-warn">COMPASS未</span></div>`;
       }

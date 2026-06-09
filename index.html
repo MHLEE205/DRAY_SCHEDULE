@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v5.11</title>
+<title>LEENAI ドレースケジュール管理 v5.12</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -319,7 +319,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v5.11</div>
+  <div class="header-ver">v5.12</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -2290,15 +2290,18 @@ function buildCellHTML(date, ds, slots, dayScheds, fulfillment, compassDay){
       } else {
         // B-05만 (COMPASS未)
         const s = item.sched;
-        // formatScheduleLine으로 COMPASS와 동일한 형식으로 표시
-        const b05line = formatScheduleLine(
-          s.packer||'', s.packer||'', s.truck||'',
-          s.itemCode||s.leenai_cttype||'', '',
-          '', s.hon||1,
-          s.leenai_scheduletime||s.time||'',
-          false
-        );
-        html += `<div class="sched-item sched-only" style="font-size:12px;">${escH(b05line)}<span class="match-badge match-warn">COMPASS未</span></div>`;
+        const pkShort  = getPackerShort(s.packer||'');
+        const plShort  = getPlantShort(s.packer||'');
+        const pkPl     = plShort && plShort !== pkShort ? `${pkShort}(${plShort})` : pkShort;
+        const dray     = s.truck ? getDrayShort(s.truck) : '';
+        const ct       = s.leenai_cttype || s.cttype || '';
+        const tm       = (s.leenai_scheduletime||s.time||'フリー').slice(0,5);
+        // leenai_cttype이 이미 C1/M1 형식이면 그대로, 아니면 itemCode로 변환
+        const ctDisp   = /^[A-Za-z]\d$/.test(ct) ? ct
+                       : getItemShort(ct,'') ? getItemShort(ct,'')+'1'
+                       : ct;
+        const left = pkPl ? `${pkPl}-${dray}` : dray;
+        html += `<div class="sched-item sched-only" style="font-size:12px;">${escH(left)} ${escH(ctDisp)} ${escH(tm)}<span class="match-badge match-warn">COMPASS未</span></div>`;
       }
     });
 
@@ -2401,7 +2404,7 @@ function openSchedModal(ds, dateObj, addMode = false){
   html += `<div class="form-section-label">新規登録</div>
   <div class="form-row">
     <div class="form-group">
-      <label class="form-label">ドレー業者 *</label>
+      <label class="form-label">ドレー業者</label>
       <select class="form-select" id="fTruck">
         ${TRUCK_LIST.map(t => `<option value="${t}">${t}</option>`).join('')}
       </select>
@@ -2492,7 +2495,7 @@ function closeSchedModal(){
 
 async function saveSchedule(){
   const truck = document.getElementById('fTruck').value;
-  if(!truck){ toast('ドレー業者を選択してください', 'err'); return; }
+  // ドレー業者は任意 (空白でも保存可)
   const activeStatus = document.querySelector('.status-btn.active');
   const status = activeStatus?.dataset.status || 'pending';
   const sched = {

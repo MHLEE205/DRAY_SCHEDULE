@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v5.14</title>
+<title>LEENAI ドレースケジュール管理 v5.15</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -319,7 +319,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v5.14</div>
+  <div class="header-ver">v5.15</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -1403,7 +1403,8 @@ function getPlantShort(plantName){
   // 그 외: 괄호 안 내용 추출
   const m = plantName.match(/[（(]([^)）]+)[)）]/);
   if(m) return m[1];
-  return plantName.slice(0,4);
+  // Plant 정보 없으면 本社 디폴트
+  return '本社';
 }
 
 // Packer명 → 약칭

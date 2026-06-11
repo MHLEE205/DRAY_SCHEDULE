@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v5.15</title>
+<title>LEENAI ドレースケジュール管理 v5.16</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -171,6 +171,11 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 /* Existing schedules in modal */
 .existing-list{display:flex;flex-direction:column;gap:6px;margin-bottom:4px;}
 .ei-compass-ok{border-left:3px solid var(--ok);}
+.sched-color-red{background:rgba(220,50,50,.25)!important;border-left-color:#dc3232!important;}
+.sched-color-purple{background:rgba(150,50,220,.25)!important;border-left-color:#9632dc!important;}
+.sched-color-blue{background:rgba(50,100,220,.25)!important;border-left-color:#3264dc!important;}
+.sched-color-yellow{background:rgba(220,180,50,.25)!important;border-left-color:#dcb432!important;}
+.sched-color-green{background:rgba(50,180,80,.25)!important;border-left-color:#32b450!important;}
 .ei-compass-ng{border-left:3px solid var(--danger);}
 .existing-item{background:var(--surface2);border-radius:8px;padding:10px 12px;display:flex;align-items:center;gap:10px;border-left:3px solid;}
 .existing-item.confirmed{border-left-color:var(--ok);}
@@ -319,7 +324,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v5.15</div>
+  <div class="header-ver">v5.16</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -713,6 +718,8 @@ const PACKER_LIST = [
   '木下紙業',
   // ナガイ
   'ナガイ(みよし)',
+  // 金子商事
+  '金子商事',
 ];
 const TRUCK_LIST = ['未定','池谷','IT','国際','山勝','日正','東方','アサヒ','今井','IS','EA'];
 const CT_TYPES = ['20ft','40ft','40HQ'];
@@ -887,7 +894,7 @@ async function loadFromDataverse(){
     const lastDay = new Date(S.currentYear, S.currentMonth, 0).getDate();
     const fromD = `${yStr}-${mStr}-01T00:00:00Z`;
     const toD   = `${yStr}-${mStr}-${lastDay}T23:59:59Z`;
-    const rs = await dvGet(`leenai_b05_drayschedules?$filter=leenai_scheddate ge ${fromD} and leenai_scheddate le ${toD}&$select=leenai_name,leenai_truck,leenai_packer,leenai_scheduletime,leenai_cttype,leenai_hon,leenai_status,leenai_pol,leenai_bkgno,leenai_comment,leenai_createdby,leenai_scheddate&$top=500`);
+    const rs = await dvGet(`leenai_b05_drayschedules?$filter=leenai_scheddate ge ${fromD} and leenai_scheddate le ${toD}&$select=leenai_name,leenai_truck,leenai_packer,leenai_scheduletime,leenai_cttype,leenai_hon,leenai_status,leenai_pol,leenai_bkgno,leenai_comment,leenai_color,leenai_createdby,leenai_scheddate&$top=500`);
     S.schedules = (rs.value||[]).map(r=>{
       // PK 필드명 자동감지: leenai_b05_*id 패턴
       const pkKey = Object.keys(r).find(k => k.startsWith('leenai_b05_') && k.endsWith('id')) || null;
@@ -905,7 +912,10 @@ async function loadFromDataverse(){
       pol:     r.leenai_pol        || 'TOKYO',
       bkgno:   r.leenai_bkgno     || '',
       cycut:   r.leenai_cycut      || '',
-      comment: r.leenai_comment    || '',
+      comment:  r.leenai_comment    || '',
+      color:    r.leenai_color      || '',
+      hasBanyu: r.leenai_banyu      || false,
+      hasPo:    r.leenai_po         || false,
       createdby: r.leenai_createdby|| '',
     };});
 
@@ -950,6 +960,7 @@ async function saveScheduleToDv(sched){
     leenai_pol:          sched.pol      || S.pol,
     leenai_bkgno:        sched.bkgno    || '',
     leenai_comment:      sched.comment  || '',
+    leenai_color:        sched.color    || '',
     leenai_createdby:    S.loggedInEmail|| '',
     leenai_scheddate:    sched.date + 'T00:00:00Z',
   };
@@ -2308,7 +2319,8 @@ function buildCellHTML(date, ds, slots, dayScheds, fulfillment, compassDay){
           ctDisp = ITEM_CODE_SHORT[ct] + '1'; // JOCC→C1 等
         }
         const left = pkPl ? `${pkPl}-${dray}` : dray;
-        html += `<div class="sched-item sched-only" style="font-size:12px;">${escH(left)} ${escH(ctDisp)} ${escH(tm)}<span class="match-badge match-warn">COMPASS未</span></div>`;
+        const colorCls = s.color ? ` sched-color-${s.color}` : '';
+        html += `<div class="sched-item sched-only${colorCls}" style="font-size:12px;">${escH(left)} ${escH(ctDisp)} ${escH(tm)}<span class="match-badge match-warn">COMPASS未</span></div>`;
       }
     });
 
@@ -2481,6 +2493,27 @@ function openSchedModal(ds, dateObj, addMode = false){
       <input type="date" class="form-input" id="fCycut">
     </div>
   </div>
+  <div class="form-row">
+    <div class="form-group">
+      <label class="form-label">バーの色</label>
+      <select class="form-select" id="fColor">
+        <option value="">白 (デフォルト)</option>
+        <option value="red">赤</option>
+        <option value="purple">紫</option>
+        <option value="blue">青</option>
+        <option value="yellow">黄色</option>
+        <option value="green">緑</option>
+      </select>
+    </div>
+    <div class="form-group" style="display:flex;align-items:center;gap:16px;padding-top:24px;">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;">
+        <input type="checkbox" id="fBanyu" style="width:16px;height:16px;">搬入票
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;">
+        <input type="checkbox" id="fPo" style="width:16px;height:16px;">PO
+      </label>
+    </div>
+  </div>
   <div class="form-group full">
     <label class="form-label">備考</label>
     <input type="text" class="form-input" id="fComment" placeholder="特記事項">
@@ -2502,44 +2535,75 @@ function closeSchedModal(){
 
 async function saveSchedule(){
   const truck = document.getElementById('fTruck').value;
-  // ドレー業者は任意 (空白でも保存可)
   const activeStatus = document.querySelector('.status-btn.active');
   const status = activeStatus?.dataset.status || 'pending';
+  const item = document.getElementById('fItem').value;
+  const ct   = document.getElementById('fCttype').value;
+  const itemSh = getItemShort(item, '');
+  const ctNum = ct.startsWith('20') ? '2' : '1';
+  const cttype = itemSh ? `${itemSh}${ctNum}` : ct;
+
+  const isEdit = !!S.editingSchedId;
+  const existing = isEdit ? S.schedules.find(x => x.id === S.editingSchedId) : null;
+
   const sched = {
-    id: 'sc_' + Date.now(),
-    date: S.modalDate,
+    id:        isEdit ? existing.id : 'sc_' + Date.now(),
+    _dvId:     isEdit ? existing._dvId : undefined,
+    date:      S.modalDate,
     truck,
-    time: document.getElementById('fTime').value,
-    packer: document.getElementById('fPacker').value,
-    // itemCode(JOCC 등) + CT종별(40ft/20ft) → C1/M2 형식으로 leenai_cttype 저장
-    itemCode: document.getElementById('fItem').value,
-    cttype: (()=>{
-      const item = document.getElementById('fItem').value;
-      const ct   = document.getElementById('fCttype').value;
-      const itemSh = getItemShort(item, '');  // JOCC→C, JOMG→M 등
-      // CT종별에서 본수 추출: 40ft=1, 20ft=2, 45ft=1 등
-      const ctNum = ct.startsWith('20') ? '2' : '1';
-      return itemSh ? `${itemSh}${ctNum}` : ct;
-    })(),
-    hon: parseInt(document.getElementById('fHon').value) || 1,
+    time:      document.getElementById('fTime').value,
+    packer:    document.getElementById('fPacker').value,
+    itemCode:  item,
+    cttype,
+    hon:       parseInt(document.getElementById('fHon').value) || 1,
     status,
-    bkgno: document.getElementById('fBkg').value,
-    cycut: document.getElementById('fCycut').value,
-    comment: document.getElementById('fComment').value,
-    pol: '', // POL固定廃止
-    createdby: S.loggedInEmail,
+    bkgno:     document.getElementById('fBkg').value,
+    cycut:     document.getElementById('fCycut').value,
+    comment:   document.getElementById('fComment').value,
+    color:     document.getElementById('fColor')?.value || '',
+    hasBanyu:  document.getElementById('fBanyu')?.checked || false,
+    hasPo:     document.getElementById('fPo')?.checked    || false,
+    pol:       isEdit ? (existing.pol||'') : '',
+    leenai_pol: isEdit ? (existing.leenai_pol||'') : '',
+    leenai_bkgno: document.getElementById('fBkg').value,
+    createdby: isEdit ? (existing.createdby||S.loggedInEmail) : S.loggedInEmail,
   };
-  S.schedules.push(sched);
+
+  if(isEdit){
+    // 편집: 기존 항목 교체
+    const idx = S.schedules.findIndex(x => x.id === S.editingSchedId);
+    if(idx >= 0) S.schedules[idx] = sched;
+  } else {
+    S.schedules.push(sched);
+  }
+  S.editingSchedId = null;
   saveLocalData();
   closeSchedModal();
   render();
   toast('保存中...', 'info');
-  // Dataverse 保存
+
   if(S.accessToken && Date.now() < S.tokenExpiry){
     try {
-      const dvId = await saveScheduleToDv(sched);
-      if(dvId) sched._dvId = dvId;
-      toast('スケジュールを保存しました ✅', 'ok');
+      if(isEdit && existing?._dvId){
+        // PATCH — 상이한 필드만 업데이트
+        await dvPatch('leenai_b05_drayschedules', existing._dvId, {
+          leenai_truck:        sched.truck,
+          leenai_scheduletime: sched.time,
+          leenai_packer:       sched.packer,
+          leenai_cttype:       sched.cttype,
+          leenai_hon:          sched.hon,
+          leenai_status:       sched.status,
+          leenai_bkgno:        sched.bkgno,
+          leenai_cycut:        sched.cycut,
+          leenai_comment:      sched.comment,
+          leenai_color:        sched.color,
+        });
+        toast('スケジュールを更新しました ✅', 'ok');
+      } else {
+        const dvId = await saveScheduleToDv(sched);
+        if(dvId) sched._dvId = dvId;
+        toast('スケジュールを保存しました ✅', 'ok');
+      }
     } catch(e){
       toast('DV保存失敗(ローカル保存済): '+e.message.slice(0,40), 'err');
     }
@@ -2569,6 +2633,12 @@ function editSchedule(id){
   if(fHon)    fHon.value    = s.leenai_hon||s.hon||1;
   if(fBkg)    fBkg.value    = s.leenai_bkgno||s.bkgno||'';
   if(fComment)fComment.value= s.comment||'';
+  const fColor  = document.getElementById('fColor');
+  const fBanyu  = document.getElementById('fBanyu');
+  const fPo     = document.getElementById('fPo');
+  if(fColor)  fColor.value    = s.color||'';
+  if(fBanyu)  fBanyu.checked  = s.hasBanyu||false;
+  if(fPo)     fPo.checked     = s.hasPo||false;
   // 新規登録ラベルを編集中に変更
   document.querySelectorAll('.form-section-label').forEach(el => {
     if(el.textContent === '新規登録') el.textContent = '✏️ 編集中';

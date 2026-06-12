@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v5.17</title>
+<title>LEENAI ドレースケジュール管理 v5.18</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -324,7 +324,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v5.17</div>
+  <div class="header-ver">v5.18</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -894,7 +894,7 @@ async function loadFromDataverse(){
     const lastDay = new Date(S.currentYear, S.currentMonth, 0).getDate();
     const fromD = `${yStr}-${mStr}-01T00:00:00Z`;
     const toD   = `${yStr}-${mStr}-${lastDay}T23:59:59Z`;
-    const rs = await dvGet(`leenai_b05_drayschedules?$filter=leenai_scheddate ge ${fromD} and leenai_scheddate le ${toD}&$select=leenai_name,leenai_truck,leenai_packer,leenai_scheduletime,leenai_cttype,leenai_hon,leenai_status,leenai_pol,leenai_bkgno,leenai_comment,leenai_color,cr0e2_leenai_banyu,cr0e2_leenai_po,leenai_createdby,leenai_scheddate&$top=500`);
+    const rs = await dvGet(`leenai_b05_drayschedules?$filter=leenai_scheddate ge ${fromD} and leenai_scheddate le ${toD}&$select=leenai_name,leenai_truck,leenai_packer,leenai_scheduletime,leenai_cttype,leenai_hon,leenai_status,leenai_pol,leenai_bkgno,leenai_comment,leenai_createdby,leenai_scheddate&$top=500`);
     S.schedules = (rs.value||[]).map(r=>{
       // PK 필드명 자동감지: leenai_b05_*id 패턴
       const pkKey = Object.keys(r).find(k => k.startsWith('leenai_b05_') && k.endsWith('id')) || null;

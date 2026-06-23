@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v5.25</title>
+<title>LEENAI ドレースケジュール管理 v5.26</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -331,7 +331,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v5.25</div>
+  <div class="header-ver">v5.26</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -971,8 +971,9 @@ async function saveScheduleToDv(sched){
     leenai_createdby:    S.loggedInEmail|| '',
     leenai_scheddate:    sched.date + 'T00:00:00Z',
   };
-  // cr0e2_color: DV컬럼 추가 완료 → 활성화
-  if(sched.color) body.cr0e2_color = sched.color;
+  // cr0e2_color / cr0e2_textcolor: DV컬럼 추가 완료 → 활성화
+  if(sched.color)     body.cr0e2_color     = sched.color;
+  if(sched.textColor) body.cr0e2_textcolor = sched.textColor;
   // cr0e2_leenai_banyu / cr0e2_leenai_po は追加済み → 活性化
   if(sched.hasBanyu !== undefined) body.cr0e2_leenai_banyu = sched.hasBanyu || false;
   if(sched.hasPo    !== undefined) body.cr0e2_leenai_po    = sched.hasPo    || false;
@@ -2634,8 +2635,9 @@ async function saveSchedule(){
           leenai_status:       sched.status,
           leenai_bkgno:        sched.bkgno,
           leenai_comment:      sched.comment,
-          cr0e2_color:         sched.color || '',
-          cr0e2_leenai_banyu:  sched.hasBanyu || false,
+          cr0e2_color:         sched.color     || '',
+          cr0e2_textcolor:     sched.textColor || '',
+          cr0e2_leenai_banyu:  sched.hasBanyu  || false,
           cr0e2_leenai_po:     sched.hasPo    || false,
         });
         toast('スケジュールを更新しました ✅', 'ok');

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v5.23</title>
+<title>LEENAI ドレースケジュール管理 v5.24</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -331,7 +331,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v5.23</div>
+  <div class="header-ver">v5.24</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -2400,6 +2400,11 @@ function getKariSlots(ds, dow){
 // SCHEDULE MODAL
 // ══════════════════════════════════════════
 function openSchedModal(ds, dateObj, addMode = false){
+  // COMPASSログイン必須: 未ログインはモーダル開放禁止
+  if(!S.accessToken || Date.now() > S.tokenExpiry){
+    toast('スケジュール入力にはCOMPASSログインが必要です', 'err');
+    return;
+  }
   S.modalDate = ds;
   S.editingSchedId = null;
   const d = new Date(ds);

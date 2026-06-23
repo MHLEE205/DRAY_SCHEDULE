@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v5.21</title>
+<title>LEENAI ドレースケジュール管理 v5.22</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -171,11 +171,11 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 /* Existing schedules in modal */
 .existing-list{display:flex;flex-direction:column;gap:6px;margin-bottom:4px;}
 .ei-compass-ok{border-left:3px solid var(--ok);}
-.sched-color-red{background:rgba(220,50,50,.25)!important;border-left-color:#dc3232!important;}
-.sched-color-purple{background:rgba(150,50,220,.25)!important;border-left-color:#9632dc!important;}
-.sched-color-blue{background:rgba(50,100,220,.25)!important;border-left-color:#3264dc!important;}
-.sched-color-yellow{background:rgba(220,180,50,.25)!important;border-left-color:#dcb432!important;}
-.sched-color-green{background:rgba(50,180,80,.25)!important;border-left-color:#32b450!important;}
+.sched-color-red{background:rgba(220,50,50,.25)!important;border-left-color:#dc3232!important;color:#ff6b6b!important;}
+.sched-color-purple{background:rgba(150,50,220,.25)!important;border-left-color:#9632dc!important;color:#c47aff!important;}
+.sched-color-blue{background:rgba(50,100,220,.25)!important;border-left-color:#3264dc!important;color:#5b9bff!important;}
+.sched-color-yellow{background:rgba(220,180,50,.25)!important;border-left-color:#dcb432!important;color:#ffd84d!important;}
+.sched-color-green{background:rgba(50,180,80,.25)!important;border-left-color:#32b450!important;color:#4ddd77!important;}
 .ei-compass-ng{border-left:3px solid var(--danger);}
 .existing-item{background:var(--surface2);border-radius:8px;padding:10px 12px;display:flex;align-items:center;gap:10px;border-left:3px solid;}
 .existing-item.confirmed{border-left-color:var(--ok);}
@@ -324,7 +324,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v5.21</div>
+  <div class="header-ver">v5.22</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>

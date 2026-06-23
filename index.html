@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v5.22</title>
+<title>LEENAI ドレースケジュール管理 v5.23</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -171,11 +171,18 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 /* Existing schedules in modal */
 .existing-list{display:flex;flex-direction:column;gap:6px;margin-bottom:4px;}
 .ei-compass-ok{border-left:3px solid var(--ok);}
-.sched-color-red{background:rgba(220,50,50,.25)!important;border-left-color:#dc3232!important;color:#ff6b6b!important;}
-.sched-color-purple{background:rgba(150,50,220,.25)!important;border-left-color:#9632dc!important;color:#c47aff!important;}
-.sched-color-blue{background:rgba(50,100,220,.25)!important;border-left-color:#3264dc!important;color:#5b9bff!important;}
-.sched-color-yellow{background:rgba(220,180,50,.25)!important;border-left-color:#dcb432!important;color:#ffd84d!important;}
-.sched-color-green{background:rgba(50,180,80,.25)!important;border-left-color:#32b450!important;color:#4ddd77!important;}
+/* 바 배경색 */
+.sched-color-red{background:rgba(220,50,50,.25)!important;border-left-color:#dc3232!important;}
+.sched-color-purple{background:rgba(150,50,220,.25)!important;border-left-color:#9632dc!important;}
+.sched-color-blue{background:rgba(50,100,220,.25)!important;border-left-color:#3264dc!important;}
+.sched-color-yellow{background:rgba(220,180,50,.25)!important;border-left-color:#dcb432!important;}
+.sched-color-green{background:rgba(50,180,80,.25)!important;border-left-color:#32b450!important;}
+/* 글자색 */
+.sched-text-red{color:#ff6b6b!important;}
+.sched-text-purple{color:#c47aff!important;}
+.sched-text-blue{color:#5b9bff!important;}
+.sched-text-yellow{color:#ffd84d!important;}
+.sched-text-green{color:#4ddd77!important;}
 .ei-compass-ng{border-left:3px solid var(--danger);}
 .existing-item{background:var(--surface2);border-radius:8px;padding:10px 12px;display:flex;align-items:center;gap:10px;border-left:3px solid;}
 .existing-item.confirmed{border-left-color:var(--ok);}
@@ -324,7 +331,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v5.22</div>
+  <div class="header-ver">v5.23</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -914,6 +921,7 @@ async function loadFromDataverse(){
       cycut:   r.leenai_cycut      || '',
       comment:  r.leenai_comment    || '',
       color:    r.cr0e2_color        || '',
+      textColor: r.cr0e2_textcolor    || '',
       hasBanyu: r.cr0e2_leenai_banyu || false,
       hasPo:    r.cr0e2_leenai_po    || false,
       createdby: r.leenai_createdby|| '',
@@ -2330,8 +2338,9 @@ function buildCellHTML(date, ds, slots, dayScheds, fulfillment, compassDay){
           ctDisp = ITEM_CODE_SHORT[ct] + '1'; // JOCC→C1 等
         }
         const left = pkPl ? `${pkPl}-${dray}` : dray;
-        const colorCls = s.color ? ` sched-color-${s.color}` : '';
-        html += `<div class="sched-item sched-only${colorCls}" style="font-size:12px;">${escH(left)} ${escH(ctDisp)} ${escH(tm)}<span class="match-badge match-warn">COMPASS未</span></div>`;
+        const colorCls    = s.color     ? ` sched-color-${s.color}`     : '';
+        const textColCls = s.textColor ? ` sched-text-${s.textColor}` : '';
+        html += `<div class="sched-item sched-only${colorCls}${textColCls}" style="font-size:12px;">${escH(left)} ${escH(ctDisp)} ${escH(tm)}<span class="match-badge match-warn">COMPASS未</span></div>`;
       }
     });
 
@@ -2516,7 +2525,20 @@ function openSchedModal(ds, dateObj, addMode = false){
         <option value="green">緑</option>
       </select>
     </div>
-    <div class="form-group" style="display:flex;align-items:center;gap:16px;padding-top:24px;">
+    <div class="form-group">
+      <label class="form-label">文字色</label>
+      <select class="form-select" id="fTextColor">
+        <option value="">黒 (デフォルト)</option>
+        <option value="red">赤</option>
+        <option value="purple">紫</option>
+        <option value="blue">青</option>
+        <option value="yellow">黄色</option>
+        <option value="green">緑</option>
+      </select>
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group" style="display:flex;align-items:center;gap:16px;padding-top:8px;">
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;">
         <input type="checkbox" id="fBanyu" style="width:16px;height:16px;">搬入票
       </label>
@@ -2571,7 +2593,8 @@ async function saveSchedule(){
     bkgno:     document.getElementById('fBkg').value,
     cycut:     document.getElementById('fCycut').value,
     comment:   document.getElementById('fComment').value,
-    color:     document.getElementById('fColor')?.value || '',
+    color:     document.getElementById('fColor')?.value     || '',
+    textColor: document.getElementById('fTextColor')?.value || '',
     hasBanyu:  document.getElementById('fBanyu')?.checked || false,
     hasPo:     document.getElementById('fPo')?.checked    || false,
     pol:       isEdit ? (existing.pol||'') : '',
@@ -2649,6 +2672,8 @@ function editSchedule(id){
   const fBanyu  = document.getElementById('fBanyu');
   const fPo     = document.getElementById('fPo');
   if(fColor)  fColor.value    = s.color||'';
+  const fTextColor = document.getElementById('fTextColor');
+  if(fTextColor) fTextColor.value = s.textColor||'';
   if(fBanyu)  fBanyu.checked  = s.hasBanyu||false;
   if(fPo)     fPo.checked     = s.hasPo||false;
   // 新規登録ラベルを編集中に変更

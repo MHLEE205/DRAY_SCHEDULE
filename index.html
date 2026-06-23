@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v5.19</title>
+<title>LEENAI ドレースケジュール管理 v5.21</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -324,7 +324,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v5.19</div>
+  <div class="header-ver">v5.21</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -894,7 +894,7 @@ async function loadFromDataverse(){
     const lastDay = new Date(S.currentYear, S.currentMonth, 0).getDate();
     const fromD = `${yStr}-${mStr}-01T00:00:00Z`;
     const toD   = `${yStr}-${mStr}-${lastDay}T23:59:59Z`;
-    const rs = await dvGet(`leenai_b05_drayschedules?$filter=leenai_scheddate ge ${fromD} and leenai_scheddate le ${toD}&$select=leenai_name,leenai_truck,leenai_packer,leenai_scheduletime,leenai_cttype,leenai_hon,leenai_status,leenai_pol,leenai_bkgno,leenai_comment,leenai_createdby,leenai_scheddate&$top=500`);
+    const rs = await dvGet(`leenai_b05_drayschedules?$filter=leenai_scheddate ge ${fromD} and leenai_scheddate le ${toD}&$select=leenai_name,leenai_truck,leenai_packer,leenai_scheduletime,leenai_cttype,leenai_hon,leenai_status,leenai_pol,leenai_bkgno,leenai_comment,cr0e2_color,leenai_createdby,leenai_scheddate&$top=500`);
     S.schedules = (rs.value||[]).map(r=>{
       // PK 필드명 자동감지: leenai_b05_*id 패턴
       const pkKey = Object.keys(r).find(k => k.startsWith('leenai_b05_') && k.endsWith('id')) || null;
@@ -913,7 +913,7 @@ async function loadFromDataverse(){
       bkgno:   r.leenai_bkgno     || '',
       cycut:   r.leenai_cycut      || '',
       comment:  r.leenai_comment    || '',
-      color:    r.leenai_color      || '',
+      color:    r.cr0e2_color        || '',
       hasBanyu: r.cr0e2_leenai_banyu || false,
       hasPo:    r.cr0e2_leenai_po    || false,
       createdby: r.leenai_createdby|| '',
@@ -950,22 +950,24 @@ function saveLocalData(){
 // Dataverse スケジュール保存
 async function saveScheduleToDv(sched){
   const body = {
-    leenai_name:         `${sched.date}_${sched.truck}_${sched.time||'フリー'}`,
+    leenai_name:         `${sched.date}_${sched.truck}_${sched.time||'フリー'}_${sched.id||Date.now()}`,
     leenai_truck:        sched.truck,
     leenai_packer:       sched.packer   || '',
     leenai_scheduletime: sched.time     || '',
     leenai_cttype:       sched.cttype   || '',
     leenai_hon:          sched.hon      || 1,
     leenai_status:       sched.status   || 'pending',
-    leenai_pol:          sched.pol      || S.pol,
+    leenai_pol:          sched.pol      || '',
     leenai_bkgno:        sched.bkgno    || '',
     leenai_comment:      sched.comment  || '',
-    leenai_color:        sched.color    || '',
-    cr0e2_leenai_banyu:  sched.hasBanyu || false,
-    cr0e2_leenai_po:     sched.hasPo    || false,
     leenai_createdby:    S.loggedInEmail|| '',
     leenai_scheddate:    sched.date + 'T00:00:00Z',
   };
+  // cr0e2_color: DV컬럼 추가 완료 → 활성화
+  if(sched.color) body.cr0e2_color = sched.color;
+  // cr0e2_leenai_banyu / cr0e2_leenai_po は追加済み → 活性化
+  if(sched.hasBanyu !== undefined) body.cr0e2_leenai_banyu = sched.hasBanyu || false;
+  if(sched.hasPo    !== undefined) body.cr0e2_leenai_po    = sched.hasPo    || false;
   if(sched._dvId){
     await dvPatch('leenai_b05_drayschedules', sched._dvId, body);
     return sched._dvId;
@@ -1767,11 +1769,10 @@ async function refreshCompass(saveToCache = false){
     toast('COMPASS取得エラー: ' + e.message.slice(0,60), 'err');
     console.error(e);
   } finally {
-    // 🔒 B-05 스케줄 복원 (refreshCompass는 COMPASS데이터만 갱신)
-    if(savedSchedules && savedSchedules.length > 0 && S.schedules.length === 0){
-      S.schedules = savedSchedules;
-    }
+    // 🔒 B-05 스케줄 완전 보존 (refreshCompass는 COMPASS데이터만 갱신)
+    S.schedules = savedSchedules;
     hideLoading();
+    render();
   }
 }
 
@@ -2604,9 +2605,8 @@ async function saveSchedule(){
           leenai_hon:          sched.hon,
           leenai_status:       sched.status,
           leenai_bkgno:        sched.bkgno,
-          leenai_cycut:        sched.cycut,
           leenai_comment:      sched.comment,
-          leenai_color:        sched.color,
+          cr0e2_color:         sched.color || '',
           cr0e2_leenai_banyu:  sched.hasBanyu || false,
           cr0e2_leenai_po:     sched.hasPo    || false,
         });

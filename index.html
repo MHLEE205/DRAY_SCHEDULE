@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v5.24</title>
+<title>LEENAI ドレースケジュール管理 v5.25</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -331,7 +331,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v5.24</div>
+  <div class="header-ver">v5.25</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -3000,7 +3000,53 @@ function changeMonth(dir){
         refreshCompass(true); // true = 취득 후 캐시 저장
       }
     }
-    // 미래 월 → 아무것도 안 함 (빈 캘린더)
+    } else {
+      // 미래 월 → B-05 스케줄만 Dataverse에서 취득
+      loadSchedulesForMonth(S.currentYear, S.currentMonth);
+    }
+  }
+}
+
+// 특정 월의 B-05 스케줄을 Dataverse에서 취득して S.schedules にマージ
+async function loadSchedulesForMonth(year, month){
+  if(!S.accessToken || Date.now() > S.tokenExpiry) return;
+  const yStr = String(year);
+  const mStr = String(month).padStart(2,'0');
+  const lastDay = new Date(year, month, 0).getDate();
+  const fromD = `${yStr}-${mStr}-01T00:00:00Z`;
+  const toD   = `${yStr}-${mStr}-${lastDay}T23:59:59Z`;
+  try {
+    const rs = await dvGet(`leenai_b05_drayschedules?$filter=leenai_scheddate ge ${fromD} and leenai_scheddate le ${toD}&$select=leenai_name,leenai_truck,leenai_packer,leenai_scheduletime,leenai_cttype,leenai_hon,leenai_status,leenai_pol,leenai_bkgno,leenai_comment,cr0e2_color,leenai_createdby,leenai_scheddate&$top=500`);
+    const newScheds = (rs.value||[]).map(r => {
+      const pkKey = Object.keys(r).find(k => k.startsWith('leenai_b05_') && k.endsWith('id')) || null;
+      const dvId  = pkKey ? r[pkKey] : null;
+      return {
+        id:       dvId || r.leenai_name,
+        _dvId:    dvId,
+        date:     (r.leenai_scheddate||'').slice(0,10),
+        truck:    r.leenai_truck        || '',
+        packer:   r.leenai_packer       || '',
+        time:     r.leenai_scheduletime || '',
+        cttype:   r.leenai_cttype       || '',
+        hon:      r.leenai_hon          || 1,
+        status:   r.leenai_status       || 'pending',
+        pol:      r.leenai_pol          || 'TOKYO',
+        bkgno:    r.leenai_bkgno        || '',
+        comment:  r.leenai_comment      || '',
+        color:    r.cr0e2_color         || '',
+        hasBanyu: r.cr0e2_leenai_banyu  || false,
+        hasPo:    r.cr0e2_leenai_po     || false,
+        createdby: r.leenai_createdby   || '',
+      };
+    });
+    // 해당 월 기존 데이터 교체 후 나머지 월 데이터와 병합
+    const prefix = `${yStr}-${mStr}`;
+    S.schedules = S.schedules.filter(s => !s.date.startsWith(prefix));
+    S.schedules.push(...newScheds);
+    saveLocalData();
+    render();
+  } catch(e){
+    console.error('月別スケジュール取得エラー:', e);
   }
 }
 

@@ -2999,7 +2999,6 @@ function changeMonth(dir){
         // 캐시 없음 → COMPASS에서 취득 후 저장
         refreshCompass(true); // true = 취득 후 캐시 저장
       }
-    }
     } else {
       // 미래 월 → B-05 스케줄만 Dataverse에서 취득
       loadSchedulesForMonth(S.currentYear, S.currentMonth);

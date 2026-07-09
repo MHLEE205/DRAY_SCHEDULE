@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v5.30</title>
+<title>LEENAI ドレースケジュール管理 v5.31</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -331,7 +331,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v5.30</div>
+  <div class="header-ver">v5.31</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -727,6 +727,8 @@ const PACKER_LIST = [
   'ナガイ(みよし)',
   // 熊谷紙業 (KUMAGAYA)
   '熊谷紙業(本社)','熊谷紙業(古河営業所)',
+  // 藤川紙業 (TOKYO)
+  '藤川紙業(埼玉)',
   // 金子商事
   '金子商事',
 ];
@@ -1341,6 +1343,7 @@ const PACKER_SHORT = {
   '兼子':           '兼',   '株式会社兼子':       '兼',
   'ウブカタ資源':   'ウブ', 'ウブカタ資源株式会社':'ウブ',
   '東京紙パルプ交易':'TKK',  '東京紙パルプ交易株式会社':'TKK',
+  '藤川紙業':       'TKK',  '株式会社藤川紙業':       'TKK',
   '紙材':           '紙材',
   '熊谷':           '熊谷',
   '群馬総合紙業':   '群馬', '株式会社群馬総合紙業':'群馬',
@@ -1370,6 +1373,7 @@ const PLANT_SHORT_TKK = {
   '東(興栄)':       '興栄',       '東(日興紙業)':  '日興',
   '東(こづか本社)': 'こづか本社', '東(こづか横浜北)':'こづか横浜北',
   '東(川鈴)':       '川鈴',       '東(山治)':       '山治',
+  '東(藤川)':       '藤川埼玉',
 };
 
 // ITEM 코드 → 약칭 (엑셀표 기반)

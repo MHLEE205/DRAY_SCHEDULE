@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v5.32</title>
+<title>LEENAI ドレースケジュール管理 v5.33</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -17,6 +17,11 @@
 [data-theme="light"] {
   --bg:#f4f6fb; --surface:#ffffff; --surface2:#f0f4ff; --surface3:#e8edf7;
   --border:#d1d5db; --text:#111827; --text2:#6b7280; --text3:#9ca3af;
+}
+[data-theme="leenai"] {
+  --bg:#FAFDF7; --surface:#ffffff; --surface2:#F2F9EE; --surface3:#E8F5E0;
+  --border:#D0E8C0; --text:#1A3A0E; --text2:#4A6A3A; --text3:#8AAA80;
+  --accent:#2D5A1E; --accent2:#2E72C8;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:13px;}
@@ -331,7 +336,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v5.32</div>
+  <div class="header-ver">v5.33</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -3095,13 +3100,25 @@ function statusLabel(s){ return s==='confirmed'?'確定':s==='review'?'調整中
 // ══════════════════════════════════════════
 // THEME
 // ══════════════════════════════════════════
+function updateThemeBtn(theme) {
+  const btn = document.getElementById('themeBtn');
+  if (!btn) return;
+  const labels = { dark: '🌙 ダーク', light: '☀️ ライト', leenai: '🌿 LEENAI' };
+  btn.textContent = labels[theme] || '🌙 ダーク';
+}
 function toggleTheme(){
-  const cur = document.documentElement.getAttribute('data-theme');
-  const next = cur === 'dark' ? 'light' : 'dark';
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  const order = ['dark', 'light', 'leenai'];
+  const next = order[(order.indexOf(current) + 1) % order.length];
   document.documentElement.setAttribute('data-theme', next);
   localStorage.setItem('leenai_b05_theme', next);
-  document.getElementById('themeBtn').textContent = next === 'dark' ? '☀️ ライト' : '🌙 ダーク';
+  updateThemeBtn(next);
 }
+(function(){
+  const saved = localStorage.getItem('leenai_b05_theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', saved);
+  document.addEventListener('DOMContentLoaded', () => updateThemeBtn(saved));
+})();
 
 // ══════════════════════════════════════════
 // LOADING / TOAST

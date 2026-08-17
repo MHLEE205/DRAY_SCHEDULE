@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v5.33</title>
+<title>LEENAI ドレースケジュール管理 v5.34</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -336,7 +336,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v5.33</div>
+  <div class="header-ver">v5.34</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -364,6 +364,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
     <option value="今井">今井</option>
     <option value="IS">IS</option>
     <option value="EA">EA</option>
+    <option value="セイユー">セイユー</option>
   </select>
   <select class="dray-select" id="packerFilter" onchange="render()">
     <option value="">全Packer</option>
@@ -391,6 +392,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
     <option value="KCB">KC — KCB</option>
     <option value="JOINP">残紙 — JOINP</option>
     <option value="SHREDDER">シ — SHREDDER</option>
+    <option value="UC">UC — 古着</option>
     <option value="JOOP">S — SOP</option>
     <option value="JONP">N — 新聞</option>
     <option value="JOCP">B — 台紙</option>
@@ -736,10 +738,12 @@ const PACKER_LIST = [
   '藤川紙業(埼玉)',
   // 羽生リサイクリング (DAIWA)
   '羽生リサイクリング',
+  // 新日本産業 (SHINNIHON)
+  '新日本産業(海老名)_UC','新日本産業(つくば)_UC',
   // 金子商事
   '金子商事',
 ];
-const TRUCK_LIST = ['未定','池谷','IT','国際','山勝','日正','東方','アサヒ','今井','IS','EA'];
+const TRUCK_LIST = ['未定','池谷','IT','国際','山勝','日正','東方','アサヒ','今井','IS','EA','セイユー'];
 const CT_TYPES = ['20ft','40ft','40HQ'];
 const TRUCK_COLORS = {'池谷':'#4f8ef7','IT':'#22c55e','国際':'#a78bfa','山勝':'#f59e0b','日正':'#14b8a6'};
 
@@ -1347,6 +1351,7 @@ const PACKER_SHORT = {
   'IKUMINE': '育峯', 'FUJI':   '富士', 'TPC':     'TPC',
   'OOMOTO':  '大本', 'SANKO':  '三弘', 'KAWASUZ': '川鈴',
   'DAIWA':   '羽生',
+  'SHINNIHON':'新日本',
   // 일본어 정식명
   '兼子':           '兼',   '株式会社兼子':       '兼',
   'ウブカタ資源':   'ウブ', 'ウブカタ資源株式会社':'ウブ',
@@ -1398,6 +1403,7 @@ const ITEM_CODE_SHORT = {
   'SHREDDER':'シ','OINP':'残紙',
   'KGB-B':'袋B','KGB':'袋','PAPER CORE':'紙管','JMC':'MC','KCB':'KC','JOINP':'残紙',
   'e段':'E',      'KGB-B':'KG','KGB':'KG',  'PPG':'P',
+  'UC':'UC',
   '牛乳パック':'牛乳', '紙管':'紙管', '間紙':'間紙',
   // 풀네임 → 약칭
   'Old Corrugated Containers':'C',
@@ -1917,6 +1923,7 @@ const COMPASS_PACKER_MAP = {
   'TOKYO(N)':'TKK(N)',  'SANKO':'三弘',     'YAMAKATSU':'山治', 'HYOGO':'兵庫',
   'HARIMA':'播磨',   'OKINAWA':'沖縄',   'KINOSHITA':'木下',   'KUMAGAYA':'熊谷',
   'DAIWA':'羽生',
+  'SHINNIHON':'新日本',
 };
 // COMPASS packerCode → purchase_detail getPackerShort 약칭 변환
 function compassPackerToShort(code){

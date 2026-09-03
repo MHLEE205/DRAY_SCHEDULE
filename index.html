@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v5.36</title>
+<title>LEENAI ドレースケジュール管理 v5.37</title>
 <style>
 /* ══ CSS 변수 ══ */
 :root {
@@ -336,7 +336,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 <header class="header">
   <div class="logo">LEENAI <span>B-05</span></div>
   <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v5.36</div>
+  <div class="header-ver">v5.37</div>
   <div class="header-right">
     <div class="header-user" id="headerUser"></div>
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
@@ -377,6 +377,7 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
     <option value="丸康">丸康</option>
     <option value="ウブ">ウブカタ</option>
     <option value="富士">富士</option>
+    <option value="育峯">育峯</option>
   </select>
   <select class="dray-select" id="itemFilter" onchange="render()">
     <option value="">全ITEM</option>
@@ -742,6 +743,10 @@ const PACKER_LIST = [
   '新日本産業(海老名)_UC','新日本産業(つくば)_UC',
   // 紙材開発 (SHIZAI)
   '紙材(練馬)','紙材(新座)',
+  // 富士紙業 (FUJI_SHIGYO)
+  '富士紙業',
+  // 育峯紙業 (IKUMINE)
+  '育峯紙業',
   // 金子商事
   '金子商事',
 ];
@@ -1355,6 +1360,7 @@ const PACKER_SHORT = {
   'DAIWA':   '羽生',
   'SHINNIHON':'新日本',
   'SHIZAI':  '紙材',
+  'FUJI_SHIGYO':'富士',
   // 일본어 정식명
   '兼子':           '兼',   '株式会社兼子':       '兼',
   'ウブカタ資源':   'ウブ', 'ウブカタ資源株式会社':'ウブ',
@@ -1928,6 +1934,8 @@ const COMPASS_PACKER_MAP = {
   'DAIWA':'羽生',
   'SHINNIHON':'新日本',
   'SHIZAI':'紙材',
+  'FUJI_SHIGYO':'富士',
+  'IKUMINE':'育峯',
 };
 // COMPASS packerCode → purchase_detail getPackerShort 약칭 변환
 function compassPackerToShort(code){

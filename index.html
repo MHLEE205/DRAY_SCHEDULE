@@ -1,39 +1,23 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEENAI ドレースケジュール管理 v5.37</title>
+<link id="leenaiFavicon" rel="icon">
+<link rel="stylesheet" href="https://mhlee205.github.io/LEENAI_COMMON/v1/leenai-common.css">
+<script src="https://mhlee205.github.io/LEENAI_COMMON/v1/leenai-common.js"></script>
+<script>if(!window.LEENAI){document.addEventListener('DOMContentLoaded',function(){document.body.innerHTML='<div style="padding:40px;font-family:sans-serif">共通ファイルの読み込みに失敗しました。ページを再読み込みしてください。</div>';});}</script>
 <style>
-/* ══ CSS 변수 ══ */
+/* ══ B-05 固有 CSS 変数 ══ */
 :root {
-  --bg:#0f1117; --surface:#1a1d27; --surface2:#22263a; --surface3:#2a2f46;
-  --border:#2e3350; --accent:#4f8ef7; --accent2:#6fa3ff;
-  --ok:#22c55e; --warn:#f59e0b; --danger:#ef4444; --info:#38bdf8;
+  --accent2:#6fa3ff;
   --purple:#a78bfa; --teal:#14b8a6;
-  --text:#e2e8f0; --text2:#8892a4; --text3:#4a5568;
   --radius:10px;
-}
-[data-theme="light"] {
-  --bg:#f4f6fb; --surface:#ffffff; --surface2:#f0f4ff; --surface3:#e8edf7;
-  --border:#d1d5db; --text:#111827; --text2:#6b7280; --text3:#9ca3af;
-}
-[data-theme="leenai"] {
-  --bg:#FAFDF7; --surface:#ffffff; --surface2:#F2F9EE; --surface3:#E8F5E0;
-  --border:#D0E8C0; --text:#1A3A0E; --text2:#4A6A3A; --text3:#8AAA80;
-  --accent:#2D5A1E; --accent2:#2E72C8;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:13px;}
 
-/* ══ Header ══ */
-.header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:200;height:50px;}
-.logo{font-size:16px;font-weight:800;letter-spacing:1px;}.logo span{color:var(--accent);}
-.header-sub{font-size:11px;color:var(--text2);}
-.header-ver{font-size:11px;color:#fff;background:var(--accent);padding:2px 9px;border-radius:12px;font-weight:700;}
-.header-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
-.theme-btn{background:var(--surface2);border:1px solid var(--border);color:var(--text2);padding:4px 10px;border-radius:8px;cursor:pointer;font-size:11px;}
-.header-user{font-size:12px;background:rgba(79,142,247,.15);color:var(--accent);padding:3px 10px;border-radius:12px;display:none;}
+/* ══ B-05 固有 Controls ══ */
 
 /* ══ Controls Bar ══ */
 .ctrl-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
@@ -46,8 +30,8 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 .ctrl-sep{width:1px;height:24px;background:var(--border);}
 .btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;transition:all .15s;white-space:nowrap;}
 .btn:disabled{opacity:.4;cursor:not-allowed;}
-.btn-primary{background:var(--accent);color:#fff;}
-.btn-primary:hover:not(:disabled){filter:brightness(1.1);}
+.btn-primary{background:var(--accent-btn);color:#fff;}
+.btn-primary:hover:not(:disabled){filter:brightness(1.08);}
 .btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
 .btn-ghost:hover:not(:disabled){border-color:var(--accent);color:var(--accent);}
 .btn-ok{background:var(--ok);color:#fff;}
@@ -155,11 +139,6 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 .sched-add{font-size:10px;color:var(--text3);padding:2px 5px;cursor:pointer;text-align:center;margin-top:2px;}
 .sched-add:hover{color:var(--accent);}
 
-/* ══ Login Screen ══ */
-#loginScreen{display:flex;align-items:center;justify-content:center;min-height:60vh;flex-direction:column;gap:20px;}
-.login-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:40px;text-align:center;max-width:400px;}
-.login-card h2{font-size:18px;margin-bottom:8px;}
-.login-card p{font-size:13px;color:var(--text2);margin-bottom:24px;}
 
 /* ══ Modal ══ */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;display:none;align-items:center;justify-content:center;}
@@ -241,21 +220,6 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 .exc-sub-input{display:none;margin-top:8px;}
 .exc-sub-input.show{display:block;}
 
-/* ══ Loading Overlay ══ */
-.loading-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;display:none;align-items:center;justify-content:center;}
-.loading-overlay.show{display:flex;}
-.loading-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px 32px;display:flex;flex-direction:column;align-items:center;gap:12px;}
-.spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;}
-@keyframes spin{to{transform:rotate(360deg);}}
-.loading-msg{font-size:13px;color:var(--text2);}
-
-/* ══ Toast ══ */
-.toast-wrap{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:8px;z-index:1000;}
-.toast{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 16px;font-size:13px;display:flex;align-items:center;gap:8px;min-width:220px;animation:slideIn .2s ease;box-shadow:0 4px 16px rgba(0,0,0,.4);}
-.toast.ok{border-left:3px solid var(--ok);}
-.toast.err{border-left:3px solid var(--danger);}
-.toast.info{border-left:3px solid var(--accent);}
-@keyframes slideIn{from{transform:translateX(20px);opacity:0;}to{transform:translateX(0);opacity:1;}}
 
 /* ══ COMPASS 확정 스케줄 표시 ══ */
 .sched-item.compass{background:rgba(79,142,247,.12);border-left-color:var(--accent);color:var(--text);}
@@ -332,18 +296,8 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
 </head>
 <body>
 
-<!-- ══ Header ══ -->
-<header class="header">
-  <div class="logo">LEENAI <span>B-05</span></div>
-  <div class="header-sub">ドレースケジュール管理</div>
-  <div class="header-ver">v5.37</div>
-  <div class="header-right">
-    <div class="header-user" id="headerUser"></div>
-    <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ ライト</button>
-    <button class="btn btn-ghost btn-sm" id="kariSettingBtn" onclick="toggleKariPanel()">⚙ 仮押さえ設定</button>
-    <button class="btn btn-primary btn-sm" id="compassBtn" onclick="startLogin()">🔑 COMPASSログイン</button>
-  </div>
-</header>
+<div id="app" style="display:none">
+<!-- ln-header は LEENAI が挿入 -->
 
 <!-- ══ Controls Bar ══ -->
 <div class="ctrl-bar" id="ctrlBar" style="display:none;">
@@ -405,17 +359,6 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
   <button class="btn btn-ghost btn-sm" id="refreshBtn" onclick="refreshCompass()">🔄 COMPASS</button>
   <button class="btn btn-teal btn-sm" onclick="openMailModal()">📧 確定メール送付</button>
   <button class="btn btn-ghost btn-sm" style="border-color:var(--accent2);" onclick="openImportModal()">📥 一括登録</button>
-</div>
-
-<!-- ══ Login Screen ══ -->
-<div id="loginScreen">
-  <div class="login-card">
-    <h2>🚛 ドレースケジュール管理</h2>
-    <p>COMPASSにログインして月間スケジュールを管理します</p>
-    <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="startLogin()">
-      🔑 Microsoftでログイン
-    </button>
-  </div>
 </div>
 
 <!-- ══ Main App ══ -->
@@ -612,43 +555,24 @@ body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color
   </div>
 </div>
 
-<!-- ══ Loading ══ -->
-<div class="loading-overlay" id="loadingOverlay">
-  <div class="loading-box">
-    <div class="spinner"></div>
-    <div class="loading-msg" id="loadingMsg">読み込み中...</div>
-  </div>
-</div>
-
-<!-- ══ Toast ══ -->
-<div class="toast-wrap" id="toastWrap"></div>
+<!-- ln-footer は LEENAI が挿入 -->
+</div><!-- /app -->
 
 <script>
 // ══════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════
 const CFG = {
-  CLIENT_ID:    'f071a165-5e9b-44bf-b6a1-baba654524db',
-  TENANT_ID:    'a56988ff-c2b8-4df8-9727-889ad4205198',
   DV_URL:       'https://orgde512c6f.crm7.dynamics.com',
-  REDIRECT_URI: 'https://mhlee205.github.io/DRAY_SCHEDULE/',
-  // B-05 Dataverse entity sets (테이블 생성 완료 후 확인 필요)
   ENTITY_RULE:  'leenai_b05_drayrules',
   ENTITY_SCHED: 'leenai_b05_drayschedules',
   ENTITY_EXC:   'leenai_b05_ruleexceptions',
 };
-const SCOPE = `${CFG.DV_URL}/user_impersonation openid profile email offline_access`;
-const GRAPH_SCOPE = 'https://graph.microsoft.com/Mail.Send https://graph.microsoft.com/User.Read openid profile';
 
 // ══════════════════════════════════════════
 // STATE
 // ══════════════════════════════════════════
 const S = {
-  accessToken: null,
-  graphToken: null,
-  tokenExpiry: 0,
-  loggedInName: '',
-  loggedInEmail: '',
   currentYear: new Date().getFullYear(),
   currentMonth: new Date().getMonth() + 1,
   pol: 'TOKYO',
@@ -755,114 +679,43 @@ const CT_TYPES = ['20ft','40ft','40HQ'];
 const TRUCK_COLORS = {'池谷':'#4f8ef7','IT':'#22c55e','国際':'#a78bfa','山勝':'#f59e0b','日正':'#14b8a6'};
 
 // ══════════════════════════════════════════
-// AUTH (PKCE)
+// DATAVERSE ヘルパー (token は LEENAI_COMMON)
 // ══════════════════════════════════════════
-function b64url(buf){ return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,''); }
-async function sha256(str){ return b64url(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str))); }
-
-async function startLogin(){
-  const verifier = b64url(crypto.getRandomValues(new Uint8Array(32)));
-  const challenge = await sha256(verifier);
-  const state = Math.random().toString(36).slice(2);
-  sessionStorage.setItem('pkce_v', verifier);
-  sessionStorage.setItem('pkce_s', state);
-  const p = new URLSearchParams({
-    client_id: CFG.CLIENT_ID, response_type:'code',
-    redirect_uri: CFG.REDIRECT_URI, scope: SCOPE,
-    code_challenge: challenge, code_challenge_method:'S256', state
-  });
-  location.href = `https://login.microsoftonline.com/${CFG.TENANT_ID}/oauth2/v2.0/authorize?${p}`;
-}
-
-async function exchangeCode(code){
-  const r = await fetch(`https://login.microsoftonline.com/${CFG.TENANT_ID}/oauth2/v2.0/token`,{
-    method:'POST',
-    headers:{'Content-Type':'application/x-www-form-urlencoded'},
-    body: new URLSearchParams({
-      grant_type:'authorization_code', client_id:CFG.CLIENT_ID,
-      code, redirect_uri:CFG.REDIRECT_URI,
-      code_verifier: sessionStorage.getItem('pkce_v')
-    })
-  });
-  if(!r.ok) throw new Error(await r.text());
-  return r.json();
-}
-
-async function handleCallback(){
-  const p = new URLSearchParams(location.search);
-  const code = p.get('code');
-  if(!code) return false;
-  showLoading('認証中...');
-  try {
-    const t = await exchangeCode(code);
-    S.accessToken = t.access_token;
-    S.tokenExpiry = Date.now() + (t.expires_in - 60) * 1000;
-    sessionStorage.setItem('b05_token', S.accessToken);
-    sessionStorage.setItem('b05_expiry', S.tokenExpiry);
-    // JWT decode for user info
-    try {
-      const parts = t.id_token?.split('.');
-      if(parts?.length === 3){
-        const b64 = parts[1].replace(/-/g,'+').replace(/_/g,'/');
-        const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
-        const payload = JSON.parse(new TextDecoder('utf-8').decode(bytes));
-        S.loggedInName = payload.name || '';
-        S.loggedInEmail = (payload.email || payload.preferred_username || '').toLowerCase();
-      }
-    } catch(_){}
-    history.replaceState({}, '', location.pathname);
-    return true;
-  } catch(e){
-    toast('認証エラー: ' + e.message, 'err');
-    return false;
-  } finally { hideLoading(); }
-}
 
 async function dvGet(path){
+  const token = await LEENAI.auth.token('dataverse');
   const r = await fetch(`${CFG.DV_URL}/api/data/v9.2/${path}`,{
-    headers:{'Authorization':`Bearer ${S.accessToken}`,'OData-MaxVersion':'4.0','Accept':'application/json'}
+    headers:{'Authorization':'Bearer '+token,'OData-MaxVersion':'4.0','Accept':'application/json'}
   });
   if(!r.ok) throw new Error(r.status + ': ' + await r.text());
   return r.json();
 }
 
 // ══════════════════════════════════════════
-// APP INIT
+// APP INIT (LEENAI_COMMON)
 // ══════════════════════════════════════════
-async function init(){
-  // 테마 복원
-  const saved = localStorage.getItem('leenai_b05_theme') || 'dark';
-  document.documentElement.setAttribute('data-theme', saved);
-  document.getElementById('themeBtn').textContent = saved === 'dark' ? '☀️ ライト' : '🌙 ダーク';
-
-  // mock 데이터 로드 (실제 Dataverse 연결 전)
+async function startTool(){
   loadMockData();
-
-  // 토큰 복원 시도
-  S.accessToken = sessionStorage.getItem('b05_token');
-  S.tokenExpiry = parseInt(sessionStorage.getItem('b05_expiry') || '0');
-
-  // callback 처리
-  if(location.search.includes('code=')){
-    const ok = await handleCallback();
-    if(!ok) return;
-  }
-
-  if(S.accessToken && Date.now() < S.tokenExpiry){
-    await onLoggedIn();
-  } else {
-    // 로그인 없이도 mock 데이터로 캘린더 보여주기
-    showApp();
-  }
+  await onLoggedIn();
 }
+
+LEENAI.init({
+  sys:     'B-05',
+  name:    'DRAYスケジュール管理',
+  version: '6.0',
+  date:    '2026-10-08',
+  desc:    'ドレースケジュールの月間管理・COMPASS連携',
+  onReady: startTool,
+});
 
 // ══════════════════════════════════════════
 // Dataverse CRUD (leenai_b05_*)
 // ══════════════════════════════════════════
 async function dvPost(entity, body){
+  const token = await LEENAI.auth.token('dataverse');
   const r = await fetch(`${CFG.DV_URL}/api/data/v9.2/${entity}`,{
     method:'POST',
-    headers:{'Authorization':`Bearer ${S.accessToken}`,'OData-MaxVersion':'4.0',
+    headers:{'Authorization':'Bearer '+token,'OData-MaxVersion':'4.0',
              'Accept':'application/json','Content-Type':'application/json'},
     body: JSON.stringify(body)
   });
@@ -870,9 +723,10 @@ async function dvPost(entity, body){
   return r;
 }
 async function dvPatch(entity, id, body){
+  const token = await LEENAI.auth.token('dataverse');
   const r = await fetch(`${CFG.DV_URL}/api/data/v9.2/${entity}(${id})`,{
     method:'PATCH',
-    headers:{'Authorization':`Bearer ${S.accessToken}`,'OData-MaxVersion':'4.0',
+    headers:{'Authorization':'Bearer '+token,'OData-MaxVersion':'4.0',
              'Accept':'application/json','Content-Type':'application/json'},
     body: JSON.stringify(body)
   });
@@ -880,9 +734,10 @@ async function dvPatch(entity, id, body){
   return r;
 }
 async function dvDelete(entity, id){
+  const token = await LEENAI.auth.token('dataverse');
   const r = await fetch(`${CFG.DV_URL}/api/data/v9.2/${entity}(${id})`,{
     method:'DELETE',
-    headers:{'Authorization':`Bearer ${S.accessToken}`,'OData-MaxVersion':'4.0'}
+    headers:{'Authorization':'Bearer '+token,'OData-MaxVersion':'4.0'}
   });
   if(!r.ok && r.status !== 204) throw new Error(r.status+': '+await r.text());
 }
@@ -990,7 +845,7 @@ async function saveScheduleToDv(sched){
     leenai_pol:          sched.pol      || '',
     leenai_bkgno:        sched.bkgno    || '',
     leenai_comment:      sched.comment  || '',
-    leenai_createdby:    S.loggedInEmail|| '',
+    leenai_createdby:    (LEENAI.user&&LEENAI.user.email||''),
     leenai_scheddate:    sched.date + 'T00:00:00Z',
   };
   // cr0e2_color / cr0e2_textcolor: DV컬럼 추가 완료 → 활성화
@@ -1031,12 +886,6 @@ async function saveExceptionToDv(exc){
 
 
 async function onLoggedIn(){
-  if(S.loggedInName){
-    const el = document.getElementById('headerUser');
-    el.textContent = '👤 ' + S.loggedInName;
-    el.style.display = 'block';
-  }
-  document.getElementById('compassBtn').textContent = '✅ COMPASS接続済';
   // Dataverse からデータ読込
   await loadFromDataverse();
   showApp();
@@ -1044,7 +893,6 @@ async function onLoggedIn(){
 }
 
 function showApp(){
-  document.getElementById('loginScreen').style.display = 'none';
   const app = document.getElementById('mainApp');
   app.style.display = 'flex';
   document.getElementById('ctrlBar').style.display = 'flex';
@@ -1081,7 +929,7 @@ async function doScSearch(){
   const diffDays = (new Date(to) - new Date(from)) / 86400000;
   if(diffDays < 0){ showScAlert('終了日は開始日より後にしてください'); return; }
   if(diffDays > 45){ showScAlert('期間は最大45日です'); return; }
-  if(!S.accessToken || Date.now() > S.tokenExpiry){ showScAlert('COMPASSログインが必要です'); return; }
+  if(LEENAI.auth.status.dataverse !== 'ok'){ showScAlert('COMPASSログインが必要です'); return; }
 
   alert.style.display = 'none';
   document.getElementById('scResultWrap').innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3);">取得中...</div>';
@@ -1513,7 +1361,7 @@ function formatScheduleLine(packerName, plantName, drayShort, itemCode, itemJa, 
 // COMPASS 집계 (STEP1 + STEP2 동시)
 // ══════════════════════════════════════════
 async function refreshCompass(saveToCache = false){
-  if(!S.accessToken || Date.now() > S.tokenExpiry){
+  if(LEENAI.auth.status.dataverse !== 'ok'){
     toast('COMPASSログインが必要です', 'err');
     return;
   }
@@ -2436,7 +2284,7 @@ function getKariSlots(ds, dow){
 // ══════════════════════════════════════════
 function openSchedModal(ds, dateObj, addMode = false){
   // COMPASSログイン必須: 未ログインはモーダル開放禁止
-  if(!S.accessToken || Date.now() > S.tokenExpiry){
+  if(LEENAI.auth.status.dataverse !== 'ok'){
     toast('スケジュール入力にはCOMPASSログインが必要です', 'err');
     return;
   }
@@ -2641,7 +2489,7 @@ async function saveSchedule(){
     pol:       isEdit ? (existing.pol||'') : '',
     leenai_pol: isEdit ? (existing.leenai_pol||'') : '',
     leenai_bkgno: document.getElementById('fBkg').value,
-    createdby: isEdit ? (existing.createdby||S.loggedInEmail) : S.loggedInEmail,
+    createdby: isEdit ? (existing.createdby||(LEENAI.user&&LEENAI.user.email||'')) : (LEENAI.user&&LEENAI.user.email||''),
   };
 
   if(isEdit){
@@ -2657,7 +2505,7 @@ async function saveSchedule(){
   render();
   toast('保存中...', 'info');
 
-  if(S.accessToken && Date.now() < S.tokenExpiry){
+  if(LEENAI.auth.status.dataverse === 'ok'){
     try {
       if(isEdit && existing?._dvId){
         // PATCH — 상이한 필드만 업데이트
@@ -2732,7 +2580,7 @@ async function deleteSchedule(id){
   closeSchedModal();
   render();
   // Dataverse 削除
-  if(sched?._dvId && S.accessToken && Date.now() < S.tokenExpiry){
+  if(sched?._dvId && LEENAI.auth.status.dataverse === 'ok'){
     try {
       await dvDelete('leenai_b05_drayschedules', sched._dvId);
       toast('削除しました ✅', 'ok');
@@ -2784,7 +2632,7 @@ function saveException(){
   const oldExc = S.kariExceptions.find(e => e.ruleId === S.excRuleId && e.date === S.excDate);
   S.kariExceptions = S.kariExceptions.filter(e => !(e.ruleId === S.excRuleId && e.date === S.excDate));
   // 기존 예외 DV 삭제
-  if(oldExc?._dvId && S.accessToken && Date.now() < S.tokenExpiry){
+  if(oldExc?._dvId && LEENAI.auth.status.dataverse === 'ok'){
     dvDelete('leenai_b05_ruleexceptions', oldExc._dvId).catch(()=>{});
   }
   if(S.excType !== 'normal'){
@@ -2793,7 +2641,7 @@ function saveException(){
     if(S.excType === 'change_time') exc.time = document.getElementById('excTime').value;
     S.kariExceptions.push(exc);
     // DV 저장
-    if(S.accessToken && Date.now() < S.tokenExpiry){
+    if(LEENAI.auth.status.dataverse === 'ok'){
       saveExceptionToDv(exc).catch(e => console.warn('例外DV保存失敗:', e));
     }
   }
@@ -2887,7 +2735,7 @@ function closeImportModal(){
   document.getElementById('importModal').classList.remove('open');
 }
 async function runBulkImport(){
-  if(!S.accessToken || Date.now() > S.tokenExpiry){
+  if(LEENAI.auth.status.dataverse !== 'ok'){
     toast('COMPASSログインが必要です', 'err'); return;
   }
   const btn = document.getElementById('importRunBtn');
@@ -2950,7 +2798,7 @@ async function runBulkImport(){
 
 // 일괄 삭제
 async function runBulkDelete(){
-  if(!S.accessToken || Date.now() > S.tokenExpiry){
+  if(LEENAI.auth.status.dataverse !== 'ok'){
     toast('COMPASSログインが必要です', 'err'); return;
   }
   if(!confirm('leenai_b05_drayschedule の全データを削除します。よろしいですか？')) return;
@@ -3005,7 +2853,7 @@ function changeMonth(dir){
   if(S.currentMonth > 12){ S.currentMonth = 1; S.currentYear++; }
   if(S.currentMonth < 1){ S.currentMonth = 12; S.currentYear--; }
   render();
-  if(S.accessToken && Date.now() < S.tokenExpiry){
+  if(LEENAI.auth.status.dataverse === 'ok'){
     const now = new Date();
     const isCurrentMonth = S.currentYear === now.getFullYear() && S.currentMonth === now.getMonth() + 1;
     const isPast = S.currentYear < now.getFullYear() ||
@@ -3045,7 +2893,7 @@ function changeMonth(dir){
 
 // 특정 월의 B-05 스케줄을 Dataverse에서 취득して S.schedules にマージ
 async function loadSchedulesForMonth(year, month){
-  if(!S.accessToken || Date.now() > S.tokenExpiry) return;
+  if(LEENAI.auth.status.dataverse !== 'ok') return;
   const yStr = String(year);
   const mStr = String(month).padStart(2,'0');
   const lastDay = new Date(year, month, 0).getDate();
@@ -3118,51 +2966,14 @@ function escH(v){ return v ? String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;'
 function statusLabel(s){ return s==='confirmed'?'確定':s==='review'?'調整中':'確認待ち'; }
 
 // ══════════════════════════════════════════
-// THEME
+// LOADING / TOAST (LEENAI_COMMON に委譲)
 // ══════════════════════════════════════════
-function updateThemeBtn(theme) {
-  const btn = document.getElementById('themeBtn');
-  if (!btn) return;
-  const labels = { dark: '🌙 ダーク', light: '☀️ ライト', leenai: '🌿 LEENAI' };
-  btn.textContent = labels[theme] || '🌙 ダーク';
+function showLoading(msg){ LEENAI.loading.show(msg||'読み込み中...'); }
+function hideLoading(){ LEENAI.loading.hide(); }
+function toast(msg, type){
+  var t = type==='err'?'danger':type==='ok'?'ok':'info';
+  LEENAI.toast(msg, t);
 }
-function toggleTheme(){
-  const current = document.documentElement.getAttribute('data-theme') || 'dark';
-  const order = ['dark', 'light', 'leenai'];
-  const next = order[(order.indexOf(current) + 1) % order.length];
-  document.documentElement.setAttribute('data-theme', next);
-  localStorage.setItem('leenai_b05_theme', next);
-  updateThemeBtn(next);
-}
-(function(){
-  const saved = localStorage.getItem('leenai_b05_theme') || 'dark';
-  document.documentElement.setAttribute('data-theme', saved);
-  document.addEventListener('DOMContentLoaded', () => updateThemeBtn(saved));
-})();
-
-// ══════════════════════════════════════════
-// LOADING / TOAST
-// ══════════════════════════════════════════
-function showLoading(msg='読み込み中...'){
-  document.getElementById('loadingMsg').textContent = msg;
-  document.getElementById('loadingOverlay').classList.add('show');
-}
-function hideLoading(){ document.getElementById('loadingOverlay').classList.remove('show'); }
-
-function toast(msg, type='ok'){
-  const w = document.getElementById('toastWrap');
-  const t = document.createElement('div');
-  t.className = `toast ${type}`;
-  const icon = type==='ok'?'✅':type==='err'?'❌':'ℹ️';
-  t.innerHTML = `<span>${icon}</span>${escH(msg)}`;
-  w.appendChild(t);
-  setTimeout(()=>{ t.style.animation='fadeOut .3s forwards'; setTimeout(()=>t.remove(),300); }, 2800);
-}
-
-// ══════════════════════════════════════════
-// BOOT
-// ══════════════════════════════════════════
-init();
 </script>
 </body>
 </html>

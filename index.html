@@ -673,6 +673,8 @@ const PACKER_LIST = [
   '育峯紙業',
   // 金子商事
   '金子商事',
+  // 黒田商事
+  '黒田商事',
 ];
 const TRUCK_LIST = ['未定','池谷','IT','国際','山勝','日正','東方','アサヒ','今井','IS','EA','セイユー'];
 const CT_TYPES = ['20ft','40ft','40HQ'];
@@ -702,8 +704,8 @@ async function startTool(){
 LEENAI.init({
   sys:     'B-05',
   name:    'DRAYスケジュール管理',
-  version: '6.0',
-  date:    '2026-10-08',
+  version: '6.1',
+  date:    '2026-10-15',
   desc:    'ドレースケジュールの月間管理・COMPASS連携',
   onReady: startTool,
 });
@@ -1225,6 +1227,7 @@ const PACKER_SHORT = {
   '育峯':           '育峯',
   '富士紙業':       '富士', '有限会社富士紙業':   '富士',
   '株式会社ティーピーシー':'TPC',
+  '黒田商事':             '黒田',
 };
 
 // Plant 정식명 → 약칭 (兼子)
